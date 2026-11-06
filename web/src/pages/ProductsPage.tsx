@@ -100,24 +100,24 @@ export function ProductsPage() {
       <PageTitle subtitle="Актуальная цена, сколько продано и сколько осталось на складе">Товары</PageTitle>
 
       <Card className="!p-3">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="flex flex-wrap items-center gap-3">
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Название или артикул"
             aria-label="Поиск по названию или артикулу"
-            className={`${selectClass} min-w-0 lg:min-w-72 lg:flex-1`}
+            className={`${selectClass} min-w-56 flex-1`}
           />
-          <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Категория" className={`${selectClass} lg:w-52 lg:shrink-0`}>
+          <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Категория" className={`${selectClass} w-48 shrink-0`}>
             <option value="">Все категории</option>
             {settings?.categories.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             <span className="text-sm text-ink-2">Продано за:</span>
-            <div className="flex flex-wrap gap-1 rounded-xl bg-hover p-1 text-sm lg:flex-nowrap">
+            <div className="flex flex-wrap gap-1 rounded-xl bg-hover p-1 text-sm">
               {SALES_PERIODS.map((p) => (
                 <button
                   key={p.days}
