@@ -204,6 +204,11 @@ export function ProductsPage() {
                               : 'продаж нет'}
                         </span>
                       </>
+                    ) : p.stock_entered !== null ? (
+                      <>
+                        <span className={`font-medium ${p.stock_entered === 0 ? 'text-critical' : ''}`}>{int(p.stock_entered)} шт</span>
+                        <span className="block text-xs text-muted">{p.stock_entered === 0 ? 'закончился' : 'вписано вами'}</span>
+                      </>
                     ) : (
                       <span className="text-xs text-muted">нет данных</span>
                     )}

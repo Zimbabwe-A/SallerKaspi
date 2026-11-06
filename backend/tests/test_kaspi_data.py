@@ -93,3 +93,10 @@ def test_api_for_real_shop_and_bot_is_blocked(shop):
         items = {p["sku"]: p for p in c.get("/api/products?shop=main").json()["items"]}
         assert items["207540642"]["kaspi_url"] == "https://kaspi.kz/shop/p/-178596339/"
         assert items["JEW-1"]["kaspi_url"] is None
+        # Остаток вручную: сохраняется у нас и виден в товарах; чужой сайт не может его менять.
+        pid = items["207540642"]["id"]
+        assert c.put(f"/api/bot/products/{pid}/stock?shop=main", json={"quantity": 12}, headers=headers).status_code == 200
+        items = {p["sku"]: p for p in c.get("/api/products?shop=main").json()["items"]}
+        assert items["207540642"]["stock_entered"] == 12
+        bad = {"Content-Type": "application/json", "Origin": "https://evil.example"}
+        assert c.put(f"/api/bot/products/{pid}/stock?shop=main", json={"quantity": 1}, headers=bad).status_code == 403

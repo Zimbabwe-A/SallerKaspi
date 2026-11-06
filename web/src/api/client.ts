@@ -121,6 +121,15 @@ export const useSaveCost = () => {
     onSuccess: () => client.invalidateQueries(),
   })
 }
+/** Остаток вручную — меняет товары и аналитику, поэтому обновляем все данные. */
+export const useSaveStock = () => {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, quantity }: { id: number; quantity: number | null }) =>
+      send('PUT', `/bot/products/${id}/stock`, { quantity }),
+    onSuccess: () => client.invalidateQueries(),
+  })
+}
 export const useDeleteRule = () => useBotMutation((id: number) => send('DELETE', `/bot/products/${id}`))
 export const useBotSwitch = () =>
   useBotMutation((body: { enabled: boolean; dry_run: boolean }) => send('POST', '/bot/switch', body))

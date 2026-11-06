@@ -87,6 +87,7 @@ export interface ProductRow {
   kaspi_url: string | null
   image_url: string | null
   cost_price: number | null
+  stock_entered: number | null
   rating: number
   reviews: number
 }

@@ -93,6 +93,7 @@ class ProductRow(BaseModel):
     kaspi_url: str | None = None  # страница товара на kaspi.kz
     image_url: str | None = None  # фото товара (появится, когда подключим чтение страниц kaspi.kz)
     cost_price: int | None = None  # закупка за 1 шт (None — не указана)
+    stock_entered: int | None = None  # остаток, введённый вручную (для настоящего магазина)
 
 
 class ProductList(BaseModel):

@@ -211,6 +211,19 @@ def put_cost(ds: DatasetDep, product_id: int, body: CostIn):
     return {"cost": cost, "break_even": economics.break_even(ds, product, cost) if cost is not None else None}
 
 
+class StockIn(BaseModel):
+    quantity: Annotated[int, Field(ge=0, le=10_000_000)] | None
+
+
+@write.put("/products/{product_id}/stock", summary="Остаток на складе (вручную)")
+def put_stock(ds: DatasetDep, product_id: int, body: StockIn):
+    """Хранится только у вас (var/shops/<магазин>/stock.json). В Kaspi ничего не отправляется."""
+    if product_id not in ds.products:
+        raise HTTPException(status_code=404, detail="Товар не найден")
+    economics.set_stock(ds.shop_id, ds.products[product_id].sku, body.quantity)
+    return {"quantity": body.quantity}
+
+
 @write.post("/run", summary="Пересчитать цены сейчас")
 def run_now(ds: DatasetDep):
     _demo_only(ds)

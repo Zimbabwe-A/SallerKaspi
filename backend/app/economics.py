@@ -88,3 +88,35 @@ def break_even(ds: Dataset, product: Product, cost: int) -> int:
     while price < MAX_PRICE and any(sale(ds, product, p, cost).profit < 0 for p in range(price, price + 50)):
         price += 1
     return price
+
+
+# --- Остаток на складе, введённый вручную (Kaspi API остатки не отдаёт) ---
+
+def stock_file(shop_id: str):
+    return shop_dir(shop_id) / "stock.json"
+
+
+def load_stock(shop_id: str) -> dict[str, int]:
+    path = stock_file(shop_id)
+    if not path.exists():
+        return {}
+    return {str(k): int(v) for k, v in json.loads(path.read_text(encoding="utf-8")).items()}
+
+
+def set_stock(shop_id: str, sku: str, quantity: int | None) -> None:
+    """Сохранить остаток товара. None — удалить. Хранится только у вас, в Kaspi не уходит."""
+    with lock:
+        stock = load_stock(shop_id)
+        if quantity is None:
+            stock.pop(sku, None)
+        else:
+            stock[sku] = int(quantity)
+        shop_dir(shop_id).mkdir(mode=0o700, parents=True, exist_ok=True)
+        _write_private(stock_file(shop_id), json.dumps(stock, ensure_ascii=False, indent=2))
+
+
+def stock_of(ds: Dataset, product: Product) -> int | None:
+    """Остаток: из данных магазина, если они есть, иначе введённый вручную."""
+    if ds.stock_known:
+        return ds.stock[product.id].quantity
+    return load_stock(ds.shop_id).get(product.sku)
