@@ -258,23 +258,6 @@ const draftFor = (row: BotRow): BotRule =>
     protect: true,
   }
 
-/** Закупка — только показываем: берётся со страницы «Закупочные цены», вписывать здесь не нужно. */
-function CostCell({ row }: { row: BotRow }) {
-  const search = usePeriodSearch()
-  if (row.cost === null) {
-    return (
-      <Link to={{ pathname: '/costs', search }} className="text-sm font-semibold text-accent hover:underline">
-        вписать →
-      </Link>
-    )
-  }
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="font-semibold">{money(row.cost)}</span>
-      {row.break_even !== null && <span className="text-xs text-muted">без убытка от {money(row.break_even)}</span>}
-    </div>
-  )
-}
 
 function PriceInput({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
   return (
@@ -319,7 +302,6 @@ function RuleRow({ row, index }: { row: BotRow; index: number }) {
         )}
         {row.stock === 0 && <p className="text-xs text-critical">закончился</p>}
       </td>
-      <td className="px-3 py-3"><CostCell row={row} /></td>
       <td className="px-3 py-3">
         <div className="flex flex-col gap-1">
           <PriceInput label="Минимум" value={draft.min_price} onChange={(v) => set({ min_price: v })} />
@@ -481,7 +463,7 @@ function BotScreen() {
             <h2 className="font-semibold">Товары</h2>
             <div className="flex flex-wrap items-center gap-1 rounded-xl bg-hover p-1 text-sm">
               <span className="px-2 text-ink-2">Сначала:</span>
-              {([['sales', 'Топ продаж'], ['price', 'Дорогие'], ['cost', 'Закупка']] as const).map(([key, label]) => (
+              {([['sales', 'Топ продаж'], ['price', 'Дорогие']] as const).map(([key, label]) => (
                 <button
                   key={key}
                   type="button"
@@ -514,7 +496,6 @@ function BotScreen() {
                 <Th title="Товар" />
                 <Th title="Ваша цена" hint="и место сейчас" right sortKey="price" sort={sort} onSort={onSort} />
                 <Th title="На складе" hint="из кабинета Kaspi" right sortKey="stock" sort={sort} onSort={onSort} />
-                <Th title="Закупка, ₸" hint="со страницы «Закупочные цены»" sortKey="cost" sort={sort} onSort={onSort} />
                 <Th title="Минимум, ₸" hint="ниже не опустится" />
                 <Th title="Максимум, ₸" hint="выше не поднимет" />
                 <Th title="Цель" hint="какое место держать" />
