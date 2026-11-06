@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useBot, useBotLog, useBotRun, useBotSwitch, useDeleteRule, useSaveCost, useSaveRule, useSource } from '../api/client'
+import { useBot, useBotLog, useBotRun, useBotSwitch, useSaveCost, useSaveRule, useSource } from '../api/client'
 import type { BotRow, BotRule, BotStatus } from '../api/types'
 import { Card, ErrorBox, Kpi, Loading, Notice, PageTitle } from '../components/ui'
 import { int, money } from '../lib/format'
@@ -24,6 +24,28 @@ function Toggle({ checked, onChange, label, disabled }: {
       className={`relative h-6 w-10 shrink-0 rounded-full transition-colors disabled:opacity-50 ${checked ? 'bg-ink' : 'bg-line'}`}
     >
       <span className={`absolute top-0.5 size-5 rounded-full bg-surface shadow transition-all ${checked ? 'left-[18px]' : 'left-0.5'}`} />
+    </button>
+  )
+}
+
+/** Большой переключатель ON / OFF: зелёный — бот работает с товаром, красный — нет. */
+function OnOff({ on, onChange, disabled }: { on: boolean; onChange: (value: boolean) => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={on ? 'Бот включён для товара' : 'Бот выключен для товара'}
+      disabled={disabled}
+      onClick={() => onChange(!on)}
+      className={`relative flex h-8 w-[76px] shrink-0 items-center rounded-full border-2 border-white/70 shadow-inner transition-colors disabled:opacity-50 ${
+        on ? 'bg-good-fill' : 'bg-critical'
+      }`}
+    >
+      <span
+        className={`absolute top-1/2 h-6 w-8 -translate-y-1/2 rounded-full bg-white shadow transition-all ${on ? 'left-[38px]' : 'left-1'}`}
+      />
+      <span className={`absolute text-xs font-bold tracking-wide text-white ${on ? 'left-2.5' : 'right-2.5'}`}>{on ? 'ON' : 'OFF'}</span>
     </button>
   )
 }
@@ -264,10 +286,10 @@ function PriceInput({ value, onChange, label }: { value: number; onChange: (v: n
 function RuleRow({ row, index }: { row: BotRow; index: number }) {
   const [draft, setDraft] = useState<BotRule>(() => draftFor(row))
   const save = useSaveRule()
-  const remove = useDeleteRule()
   const dirty = JSON.stringify(draft) !== JSON.stringify(row.rule)
   const set = (patch: Partial<BotRule>) => setDraft((d) => ({ ...d, ...patch }))
   const invalid = draft.min_price <= 0 || draft.max_price < draft.min_price
+  const on = !!row.rule?.enabled
 
   return (
     <tr className="align-top hover:bg-hover">
@@ -275,6 +297,7 @@ function RuleRow({ row, index }: { row: BotRow; index: number }) {
       <td className="max-w-64 px-3 py-3">
         <p className="truncate font-medium">{row.name}</p>
         <p className="text-xs text-muted">{row.sku} · продавцов {row.sellers}</p>
+        <p className="text-xs text-ink-2">продано за 30 дней: <b>{row.units_30d} шт</b></p>
       </td>
       <td className="whitespace-nowrap px-3 py-3 text-right">
         <p className="font-medium">{money(row.price)}</p>
@@ -307,24 +330,19 @@ function RuleRow({ row, index }: { row: BotRow; index: number }) {
       <td className="whitespace-nowrap px-3 py-3 text-right"><Outcome row={row} /></td>
       <td className="px-4 py-3">
         <div className="flex flex-col items-start gap-1.5">
-          {row.rule && <Toggle label="Бот для товара" checked={draft.enabled} onChange={(enabled) => set({ enabled })} />}
-          <label className="flex max-w-36 items-start gap-1.5 text-xs text-ink-2">
-            <input type="checkbox" checked={draft.protect} onChange={(e) => set({ protect: e.target.checked })} className="mt-0.5" />
-            не уходить в минус
-          </label>
-          {(dirty || !row.rule) && (
+          <OnOff
+            on={on}
+            disabled={invalid || save.isPending}
+            onChange={(value) => save.mutate({ id: row.product_id, rule: { ...draft, enabled: value, protect: true } })}
+          />
+          {on && dirty && (
             <button
               type="button"
               disabled={invalid || save.isPending}
-              onClick={() => save.mutate({ id: row.product_id, rule: draft })}
+              onClick={() => save.mutate({ id: row.product_id, rule: { ...draft, enabled: true } })}
               className="whitespace-nowrap rounded-lg bg-ink px-2.5 py-1 text-xs font-medium text-page disabled:opacity-40"
             >
-              {row.rule ? 'Сохранить' : 'Добавить в бота'}
-            </button>
-          )}
-          {row.rule && !dirty && (
-            <button type="button" onClick={() => remove.mutate(row.product_id)} className="whitespace-nowrap text-xs text-muted hover:underline">
-              Убрать из бота
+              Сохранить
             </button>
           )}
           {invalid && <p className="max-w-36 text-xs text-critical">Максимум должен быть не меньше минимума</p>}
@@ -368,7 +386,7 @@ function Log() {
   )
 }
 
-type SortKey = 'price' | 'cost'
+type SortKey = 'sales' | 'price' | 'cost'
 
 function Th({ title, hint, right, sortKey, sort, onSort }: {
   title: string
@@ -414,14 +432,14 @@ function BotScreen() {
   const { data, error } = useBot()
   const [filter, setFilter] = useState<Filter>('all')
   // По умолчанию — от дорогих к дешёвым. Нажатие на заголовок меняет порядок.
-  const [sort, setSort] = useState<{ key: SortKey; order: 'desc' | 'asc' }>({ key: 'price', order: 'desc' })
+  const [sort, setSort] = useState<{ key: SortKey; order: 'desc' | 'asc' }>({ key: 'sales', order: 'desc' })
   const onSort = (key: SortKey) =>
     setSort((s) => (s.key === key ? { key, order: s.order === 'desc' ? 'asc' : 'desc' } : { key, order: 'desc' }))
 
   if (error) return <ErrorBox error={error} />
   if (!data) return <Loading />
 
-  const value = (r: BotRow) => (sort.key === 'price' ? r.price : r.cost)
+  const value = (r: BotRow) => (sort.key === 'sales' ? r.units_30d : sort.key === 'price' ? r.price : r.cost)
   const rows = data.rows
     .filter((r) => (filter === 'bot' ? r.rule : filter === 'not_first' ? r.next_position !== null && r.next_position !== 1 : true))
     .sort((a, b) => {
@@ -443,7 +461,22 @@ function BotScreen() {
 
       <Card className="overflow-hidden !p-0">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-4 md:px-5">
-          <h2 className="font-semibold">Товары</h2>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="font-semibold">Товары</h2>
+            <div className="flex flex-wrap items-center gap-1 rounded-xl bg-hover p-1 text-sm">
+              <span className="px-2 text-ink-2">Сначала:</span>
+              {([['sales', 'Топ продаж'], ['price', 'Дорогие'], ['cost', 'Закупка']] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setSort({ key, order: 'desc' })}
+                  className={`rounded-lg px-3 py-1 ${sort.key === key ? 'bg-surface font-medium shadow-sm' : 'text-ink-2'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="flex flex-wrap gap-1 rounded-xl bg-hover p-1 text-sm">
             {FILTERS.map((f) => (
               <button

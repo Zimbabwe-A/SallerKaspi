@@ -79,6 +79,7 @@
   --color-brand: var(--brand);
   --color-on-brand: var(--on-brand);
   --color-good: var(--good);
+  --color-good-fill: var(--good-fill);
   --color-warning: var(--warning);
   --color-serious: var(--serious);
   --color-critical: var(--critical);

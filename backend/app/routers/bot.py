@@ -64,6 +64,7 @@ class BotRow(BaseModel):
     next_profit: int | None  # прибыль с 1 продажи по цене бота
     first_place_price: int | None  # какая цена нужна, чтобы быть 1-м
     first_place_profit: int | None  # прибыль с продажи по этой цене
+    units_30d: int = 0  # продано штук за 30 дней — для сортировки «топ продаж»
 
 
 class BotCounts(BaseModel):
@@ -104,6 +105,12 @@ def _status(ds) -> BotStatus:
     state = storage.load_state(ds.shop_id)
     source = TestCompetitorSource(ds)
     rows: list[BotRow] = []
+    from datetime import timedelta
+    since = ds.end - timedelta(days=29)
+    sold: dict[int, int] = {}
+    for o in ds.orders:
+        if o.status == "delivered" and o.day >= since:
+            sold[o.product_id] = sold.get(o.product_id, 0) + o.qty
     for p in ds.products.values():
         competitors = source.prices(p.id)
         rule = state.rules.get(str(p.id))
@@ -135,6 +142,7 @@ def _status(ds) -> BotStatus:
             next_profit=profit(decision.price) if decision else None,
             first_place_price=first_price if first_price and first_price > 0 else None,
             first_place_profit=profit(first_price) if first_price and first_price > 0 else None,
+            units_30d=sold.get(p.id, 0),
         ))
     active = [r for r in rows if r.next_position is not None]
     counts = BotCounts(
