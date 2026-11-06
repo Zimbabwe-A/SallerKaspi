@@ -6,10 +6,10 @@ import { dec, int, money } from '../lib/format'
 
 type Tab = 'order' | 'trends' | 'risks'
 
-const TABS: { id: Tab; icon: string; label: string }[] = [
-  { id: 'order', icon: '📦', label: 'Умный заказ' },
-  { id: 'trends', icon: '🚀', label: 'Что закупать нового' },
-  { id: 'risks', icon: '📉', label: 'Риски закупа' },
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'order', label: 'Умный заказ' },
+  { id: 'trends', label: 'Что закупать нового' },
+  { id: 'risks', label: 'Риски закупа' },
 ]
 
 const STATUS: Record<Insights['reorder'][number]['status'], { label: string; className: string }> = {
@@ -223,7 +223,6 @@ export function MarketPage() {
               tab === t.id ? 'cta-gradient text-white' : 'text-ink-2 hover:bg-hover'
             }`}
           >
-            <span aria-hidden className="mr-1.5">{t.icon}</span>
             {t.label}
           </button>
         ))}
