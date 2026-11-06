@@ -210,3 +210,32 @@ def test_autoupdate_cycle_refreshes_market_and_bot_stays_in_test_mode(shop, monk
     log = st.read_log(shop="main")
     assert log and all(e["dry_run"] for e in log) and log[0]["new_price"] == 248
     assert st.load_state("main").prices == {}  # цена в «наших» данных не поменялась
+
+
+def test_insights_reorder_lost_revenue_and_risks(shop, monkeypatch):
+    from app import config
+    from app.kaspi.cabinet import parse_offer, save_offers
+    from app.kaspi.market import save_market
+    monkeypatch.setattr(config, "KASPI_MERCHANT_ID", "30465550")
+    save_offers("main", [parse_offer({**OFFER, "availabilities": [{**OFFER["availabilities"][0], "stockCount": 0}]})])
+    save_market("main", "710000000", {"178596339": [
+        {"merchant_id": "1", "name": "Kaspi Магазин", "price": 200, "rating": 5, "reviews": 100, "delivery": "TODAY"},
+        {"merchant_id": "30465550", "name": "Мы", "price": 299, "rating": 4.9, "reviews": 39, "delivery": "TODAY"},
+    ]})
+    from app.main import app
+    with TestClient(app) as c:
+        d = c.get("/api/market/insights?shop=main").json()
+        brush = next(r for r in d["reorder"] if r["sku"] == "207540642")
+        assert brush["stock"] == 0 and brush["status"] == "out" and brush["order_qty"] > 0
+        assert d["lost_total_per_day"] > 0
+        risk = next(r for r in d["risks"] if r["name"] == "Кисточки")
+        assert risk["monopoly"] and "Не закупать" in risk["advice"]
+        assert {r["abc"] for r in d["abc"]} <= {"A", "B", "C", None}
+    assert (sync.shop_dir("main") / "market_history").exists()
+
+
+def test_insights_on_demo_shop():
+    from app.main import app
+    with TestClient(app) as c:
+        d = c.get("/api/market/insights").json()
+        assert d["reorder"] and d["abc"] and d["risks"]

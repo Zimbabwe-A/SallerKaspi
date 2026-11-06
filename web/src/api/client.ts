@@ -145,3 +145,15 @@ export const useDeleteRule = () => useBotMutation((id: number) => send('DELETE',
 export const useBotSwitch = () =>
   useBotMutation((body: { enabled: boolean; dry_run: boolean }) => send('POST', '/bot/switch', body))
 export const useBotRun = () => useBotMutation(() => send('POST', '/bot/run'))
+
+export interface Insights {
+  based_on: string
+  reorder: { product_id: number; name: string; sku: string; stock: number | null; per_day: number; days_left: number | null; order_qty: number; status: 'out' | 'urgent' | 'soon' | 'ok' | 'no_sales'; message: string }[]
+  lost_total_per_day: number
+  lost: { product_id: number; name: string; per_day: number; price: number; lost_per_day: number }[]
+  abc: { product_id: number; name: string; abc: 'A' | 'B' | 'C' | null; xyz: 'X' | 'Y' | 'Z' | null; amount: number; advice: string }[]
+  risks: { product_id: number; name: string; sellers: number; big_sellers: string[]; monopoly: boolean; price_drop_pct: number | null; history_days: number; advice: string }[]
+}
+
+export const useInsights = () =>
+  useQuery({ queryKey: ['insights', currentShop()], queryFn: () => get<Insights>('/market/insights'), refetchInterval: 60_000 })

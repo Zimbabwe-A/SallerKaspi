@@ -4,7 +4,7 @@ from fastapi import APIRouter
 
 from app import schemas
 from app.deps import DatasetDep, PeriodDep, ProductIdDep
-from app.services import alerts, market
+from app.services import alerts, insights, market
 
 router = APIRouter(prefix="/market", tags=["Внешняя аналитика"])
 
@@ -30,3 +30,8 @@ def get_categories(ds: DatasetDep):
 def get_alerts(ds: DatasetDep, severity: Literal["high", "medium", "low"] | None = None):
     items = alerts.alerts(ds)
     return [a for a in items if a.severity == severity] if severity else items
+
+
+@router.get("/insights", response_model=insights.Insights, summary="Аналитика для закупа: заказ, упущенная выручка, ABC/XYZ, риски")
+def get_insights(ds: DatasetDep):
+    return insights.insights(ds)

@@ -69,6 +69,33 @@ def save_market(shop_id: str, city_id: str, products: dict[str, list[dict]]) -> 
     shop_dir(shop_id).mkdir(mode=0o700, parents=True, exist_ok=True)
     payload = {"synced_at": datetime.now().isoformat(timespec="seconds"), "city_id": city_id, "products": products}
     _write_private(market_file(shop_id), json.dumps(payload, ensure_ascii=False))
+    save_daily(shop_id, products)
+
+
+def history_dir(shop_id: str):
+    return shop_dir(shop_id) / "market_history"
+
+
+def save_daily(shop_id: str, products: dict[str, list[dict]]) -> None:
+    """Снимок дня: самая низкая цена конкурента и число продавцов по товару (для индекса демпинга)."""
+    from app import config
+    day = datetime.now().date().isoformat()
+    snapshot = {}
+    for code, sellers in products.items():
+        rivals = [s["price"] for s in sellers if s["merchant_id"] != config.KASPI_MERCHANT_ID and s["price"] > 0]
+        snapshot[code] = {"min": min(rivals) if rivals else None, "sellers": len(sellers)}
+    path = history_dir(shop_id)
+    path.mkdir(mode=0o700, parents=True, exist_ok=True)
+    _write_private(path / f"{day}.json", json.dumps(snapshot, ensure_ascii=False))
+
+
+def load_history(shop_id: str, days: int = 90) -> dict[str, dict]:
+    """{дата: {код: {min, sellers}}} за последние days дней, по возрастанию даты."""
+    path = history_dir(shop_id)
+    if not path.exists():
+        return {}
+    files = sorted(path.glob("*.json"))[-days:]
+    return {f.stem: json.loads(f.read_text(encoding="utf-8")) for f in files}
 
 
 def load_market(shop_id: str) -> dict | None:
