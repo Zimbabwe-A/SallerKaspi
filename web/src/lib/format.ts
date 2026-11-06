@@ -2,8 +2,8 @@ const number = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 })
 const decimal = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 1 })
 const compact = new Intl.NumberFormat('ru-RU', { notation: 'compact', maximumFractionDigits: 1 })
 
-export const money = (value: number) => `${number.format(value)} ₸`
-export const moneyCompact = (value: number) => `${compact.format(value)} ₸`
+export const money = (value: number) => `${number.format(value)}\u00a0₸`
+export const moneyCompact = (value: number) => `${compact.format(value)}\u00a0₸`
 export const numberCompact = (value: number) => compact.format(value)
 export const int = (value: number) => number.format(value)
 export const pct = (value: number) => `${decimal.format(value)}%`

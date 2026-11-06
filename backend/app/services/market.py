@@ -83,15 +83,17 @@ def categories(ds: Dataset) -> list[schemas.CategoryMarket]:
         for p in products:
             md = market_day(ds, p.id)
             competitor_prices = list(md.competitor_prices.values())
-            indexes.append(md.my_price / (sum(competitor_prices) / len(competitor_prices)))
             sellers.append(len(competitor_prices) + 1)
+            if not competitor_prices:  # нет данных о конкурентах
+                continue
+            indexes.append(md.my_price / (sum(competitor_prices) / len(competitor_prices)))
             cheapest += md.my_price < min(competitor_prices)
         result.append(schemas.CategoryMarket(
             id=cid,
             name=category.name,
             products=len(products),
             avg_sellers=round(sum(sellers) / len(sellers), 1),
-            price_index=round(sum(indexes) / len(indexes) * 100, 1),
+            price_index=round(sum(indexes) / len(indexes) * 100, 1) if indexes else 100.0,
             cheapest_share=round(cheapest / len(products) * 100, 1),
             revenue_30d=revenue[cid],
         ))

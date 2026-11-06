@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { useAlerts, useMarketCategories } from '../api/client'
+import { useAlerts, useMarketCategories, useSource } from '../api/client'
 import type { AlertSeverity } from '../api/types'
-import { Card, ErrorBox, PageTitle, SeverityBadge } from '../components/ui'
+import { Card, ErrorBox, Notice, PageTitle, SeverityBadge } from '../components/ui'
 import { dec, money, pct, shortDate } from '../lib/format'
 import { usePeriodSearch } from '../lib/period'
 
@@ -28,6 +28,20 @@ export function MarketPage() {
   const categories = useMarketCategories()
   const alerts = useAlerts()
   const [severity, setSeverity] = useState<AlertSeverity | ''>('')
+  const source = useSource()
+
+  if (source.data && !source.data.market_known) {
+    return (
+      <>
+        <PageTitle>Рынок</PageTitle>
+        <Notice title="Цены конкурентов ещё не подключены">
+          Kaspi API отдаёт только ваши заказы — цен других продавцов в нём нет. Их нужно брать со страниц ваших
+          товаров на kaspi.kz. Это следующий шаг: после него здесь появятся конкуренты, а бот цен заработает на
+          вашем магазине.
+        </Notice>
+      </>
+    )
+  }
   const search = usePeriodSearch()
   const shown = alerts.data?.filter((a) => !severity || a.severity === severity)
 

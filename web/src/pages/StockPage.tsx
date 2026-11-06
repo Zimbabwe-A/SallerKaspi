@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import { useStock } from '../api/client'
 import type { StockStatus } from '../api/types'
-import { Card, ErrorBox, Kpi, Loading, PageTitle, StockBadge } from '../components/ui'
+import { Card, ErrorBox, Kpi, Loading, Notice, PageTitle, StockBadge } from '../components/ui'
 import { dec, int, shortDate } from '../lib/format'
 import { usePeriodSearch } from '../lib/period'
 
@@ -13,6 +13,18 @@ export function StockPage() {
   if (!data) return <Loading />
 
   const count = (status: StockStatus) => data.filter((r) => r.status === status).length
+
+  if (data.length && data.every((r) => r.status === 'unknown')) {
+    return (
+      <>
+        <PageTitle>Остатки</PageTitle>
+        <Notice title="Kaspi не отдаёт остатки через API">
+          Количество на складе Kaspi в API заказов не передаёт. Можно будет вводить остатки на сайте или загружать
+          таблицей — тогда здесь появится «на сколько дней хватит». Сейчас видна только скорость продаж в разделе «Товары».
+        </Notice>
+      </>
+    )
+  }
 
   return (
     <>

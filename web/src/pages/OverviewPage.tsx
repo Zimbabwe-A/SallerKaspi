@@ -1,9 +1,17 @@
 import { Link } from 'react-router'
-import { useAlerts, useBreakdown, useDailySales, useProducts, useSummary } from '../api/client'
+import { useAlerts, useBreakdown, useDailySales, useProducts, useSource, useSummary } from '../api/client'
 import { BreakdownBar, DailyLineChart } from '../components/charts'
-import { AbcBadge, Card, ErrorBox, Kpi, Loading, PageTitle, SeverityBadge } from '../components/ui'
+import { AbcBadge, Card, ErrorBox, Kpi, Loading, Notice, PageTitle, SeverityBadge } from '../components/ui'
 import { int, money, pct } from '../lib/format'
 import { usePeriodSearch } from '../lib/period'
+
+function Icon({ d }: { d: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </svg>
+  )
+}
 
 export function OverviewPage() {
   const summary = useSummary()
@@ -12,6 +20,8 @@ export function OverviewPage() {
   const top = useProducts({ sort: 'revenue', order: 'desc' })
   const alerts = useAlerts()
   const search = usePeriodSearch()
+  const source = useSource()
+  const missingCost = source.data ? source.data.products - source.data.products_with_cost : 0
 
   if (summary.error) return <ErrorBox error={summary.error} />
   if (!summary.data) return <Loading />
@@ -21,20 +31,52 @@ export function OverviewPage() {
 
   return (
     <>
-      <PageTitle subtitle={`${int(t.orders)} заказов · ${int(t.units)} шт выкуплено · отмен ${t.cancelled}, возвратов ${t.returned}`}>
-        Обзор
+      <PageTitle
+        subtitle={`${int(t.orders)} заказов · ${int(t.units)} шт выкуплено${
+          t.pending_orders ? ` · в пути ${int(t.pending_orders)} на ${money(t.pending_amount)}` : ''
+        } · отмен ${t.cancelled}, возвратов ${t.returned}`}
+      >
+        Аналитика магазина
       </PageTitle>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Kpi label="Выручка" value={money(t.revenue)} change={change.revenue} hint={`Средний чек ${money(t.avg_check)}`} />
-        <Kpi label="Удержал Kaspi" value={money(t.kaspi_total)} tone="bad" hint={`${shareOfRevenue(t.kaspi_total)} от выручки`} />
-        <Kpi label="Пришло на счёт" value={money(t.payout)} tone="good" change={change.payout} hint={`${shareOfRevenue(t.payout)} от выручки`} />
+      {missingCost > 0 && source.data && (
+        <Notice accent title="Впишите, за сколько вы покупаете товары — иначе прибыль неточная">
+          Сайт не знает, сколько вы платите поставщику, поэтому прибыль выходит больше настоящей. Не вписано у{' '}
+          {missingCost} из {source.data.products} товаров.
+          <Link
+            to={{ pathname: '/costs', search }}
+            className="cta-gradient mt-3 block w-fit rounded-lg px-4 py-2 text-base font-semibold text-white hover:opacity-90"
+          >
+            Вписать закупочные цены
+          </Link>
+        </Notice>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Kpi
+          label="Выручка"
+          accent="var(--cta)"
+          icon={<Icon d="M3 7h18v12H3zM3 7l3-3h12l3 3M16 13h2" />}
+          value={money(t.revenue)}
+          change={change.revenue}
+          hint={t.pending_orders ? `+ ${money(t.pending_amount)} в пути · средний чек ${money(t.avg_check)}` : `Средний чек ${money(t.avg_check)}`}
+        />
+        <Kpi
+          label="Удержал Kaspi"
+          accent="var(--critical)"
+          icon={<Icon d="M19 5 5 19M7.5 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM16.5 18a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />}
+          value={money(t.kaspi_total)}
+          tone="bad"
+          hint={`${shareOfRevenue(t.kaspi_total)} от выручки`}
+        />
         <Kpi
           label="Прибыль"
+          accent="var(--good)"
+          icon={<Icon d="m3 17 6-6 4 4 8-8M15 7h6v6" />}
           value={money(t.profit)}
           tone={t.profit >= 0 ? 'good' : 'bad'}
           change={change.profit}
-          hint={`После налога ${money(t.profit_after_tax)}`}
+          hint={missingCost > 0 ? `без учёта закупки · после налога ${money(t.profit_after_tax)}` : `После налога ${money(t.profit_after_tax)}`}
         />
       </div>
 

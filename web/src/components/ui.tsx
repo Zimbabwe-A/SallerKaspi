@@ -9,7 +9,7 @@ export function Card({ title, action, children, className = '' }: {
   className?: string
 }) {
   return (
-    <section className={`rounded-2xl border border-line bg-surface p-4 shadow-sm md:p-5 ${className}`}>
+    <section className={`card rounded-2xl p-4 md:p-5 ${className}`}>
       {(title || action) && (
         <div className="mb-4 flex items-center justify-between gap-3">
           {title && <h2 className="font-semibold">{title}</h2>}
@@ -43,18 +43,38 @@ export function Change({ value, inverse = false }: { value: number | null | unde
   )
 }
 
-export function Kpi({ label, value, tone, change, inverseChange, hint }: {
+export function Kpi({ label, value, tone, change, inverseChange, hint, icon, accent }: {
   label: string
   value: string
   tone?: 'good' | 'bad'
   change?: number | null
   inverseChange?: boolean
   hint?: ReactNode
+  icon?: ReactNode
+  /** Цвет полоски сверху, свечения и значка, например 'var(--good)'. */
+  accent?: string
 }) {
   const color = tone === 'good' ? 'text-good' : tone === 'bad' ? 'text-critical' : 'text-ink'
   return (
-    <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm">
-      <p className="text-sm text-ink-2">{label}</p>
+    <div
+      className="card relative overflow-hidden rounded-2xl p-4"
+      style={accent ? {
+        background: `radial-gradient(240px 140px at 100% 0%, color-mix(in srgb, ${accent} 16%, transparent), transparent 70%), var(--surface)`,
+      } : undefined}
+    >
+      {accent && <span aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ background: accent }} />}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[15px] font-semibold text-ink">{label}</p>
+        {icon && (
+          <span
+            aria-hidden
+            className="grid size-9 place-items-center rounded-xl"
+            style={{ background: `color-mix(in srgb, ${accent ?? 'var(--ink)'} 14%, transparent)`, color: accent ?? 'var(--ink)' }}
+          >
+            {icon}
+          </span>
+        )}
+      </div>
       <p className={`mt-1.5 text-xl font-semibold tracking-tight md:text-2xl ${color}`}>{value}</p>
       {(hint || change != null) && (
         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted">
@@ -71,6 +91,7 @@ const STOCK: Record<StockStatus, { label: string; icon: string; className: strin
   critical: { label: 'Критично', icon: '!', className: 'bg-serious/15 text-serious' },
   low: { label: 'Мало', icon: '▲', className: 'bg-warning/20 text-ink-2' },
   ok: { label: 'В норме', icon: '✓', className: 'bg-good/10 text-good' },
+  unknown: { label: 'Нет данных', icon: '?', className: 'bg-hover text-muted ring-1 ring-line' },
 }
 
 export function StockBadge({ status }: { status: StockStatus }) {
@@ -105,6 +126,19 @@ export function AbcBadge({ abc }: { abc: 'A' | 'B' | 'C' | null }) {
   return <span className={`inline-grid size-6 place-items-center rounded-md text-xs font-semibold ${className}`}>{abc}</span>
 }
 
+/** Пояснение, когда для настоящего магазина каких-то данных нет. */
+export function Notice({ title, children, accent = false }: { title: string; children: ReactNode; accent?: boolean }) {
+  return (
+    <div
+      className={`card rounded-2xl p-4 text-sm ${accent ? 'border-l-4 !border-l-[var(--cta)]' : ''}`}
+      style={accent ? { background: 'linear-gradient(100deg, color-mix(in srgb, var(--cta) 10%, var(--surface)), var(--surface) 60%)' } : undefined}
+    >
+      <p className="font-medium">{title}</p>
+      <div className="mt-1 text-ink-2">{children}</div>
+    </div>
+  )
+}
+
 export function Loading() {
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-busy>
@@ -120,7 +154,7 @@ export function ErrorBox({ error }: { error: unknown }) {
   return (
     <div className="rounded-2xl border border-critical/30 bg-critical/5 p-4 text-sm">
       <p className="font-medium text-critical">Не удалось загрузить данные</p>
-      <p className="mt-1 text-ink-2">{text}. Проверьте, что сервер запущен на порту 8000.</p>
+      <p className="mt-1 text-ink-2">{text}</p>
     </div>
   )
 }

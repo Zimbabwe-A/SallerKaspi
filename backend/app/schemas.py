@@ -25,6 +25,8 @@ class Totals(BaseModel):
     tax: int
     profit_after_tax: int
     avg_check: int
+    pending_orders: int = 0  # заказы в пути
+    pending_amount: int = 0  # их сумма, ₸
 
 
 class Summary(BaseModel):
@@ -63,7 +65,7 @@ class Category(BaseModel):
     commission: float
 
 
-StockStatus = Literal["out", "critical", "low", "ok"]
+StockStatus = Literal["out", "critical", "low", "ok", "unknown"]
 
 
 class ProductRow(BaseModel):
@@ -88,6 +90,9 @@ class ProductRow(BaseModel):
     stock_status: StockStatus
     rating: float
     reviews: int
+    kaspi_url: str | None = None  # страница товара на kaspi.kz
+    image_url: str | None = None  # фото товара (появится, когда подключим чтение страниц kaspi.kz)
+    cost_price: int | None = None  # закупка за 1 шт (None — не указана)
 
 
 class ProductList(BaseModel):
@@ -187,13 +192,22 @@ class Alert(BaseModel):
 
 
 class DeliveryTier(BaseModel):
-    up_to: int | None
-    fee: int
+    up_to: float | None  # сумма заказа, ₸ (меньше) или вес, кг (до)
+    city: float
+    country: float
+    express: float | None = None
+
+
+class DeliveryTariffs(BaseModel):
+    seller_city: str
+    small_order_limit: int
+    by_order_sum: list[DeliveryTier]
+    by_weight: list[DeliveryTier]
 
 
 class Settings(BaseModel):
     currency: str
     tax_rate: float
     categories: list[Category]
-    delivery_tiers: list[DeliveryTier]
+    delivery: DeliveryTariffs
     data_period: Period

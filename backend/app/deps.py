@@ -3,8 +3,16 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Query
 
+from app.data import store
 from app.data.models import Dataset
-from app.data.store import get_dataset
+
+
+def get_dataset(shop: Annotated[str, Query(description="Магазин: demo или main")] = store.DEMO) -> Dataset:
+    try:
+        return store.get_dataset(shop)
+    except LookupError as error:
+        raise HTTPException(status_code=404, detail=str(error)) from None
+
 
 DatasetDep = Annotated[Dataset, Depends(get_dataset)]
 

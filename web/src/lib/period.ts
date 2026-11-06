@@ -23,7 +23,10 @@ export function usePeriod() {
 /** Строка ?from=&to= текущего периода — чтобы ссылки между страницами его не теряли. */
 export function usePeriodSearch() {
   const { from, to } = usePeriod()
+  const [params] = useSearchParams()
   const query = new URLSearchParams()
+  const shop = params.get('shop')
+  if (shop) query.set('shop', shop)
   if (from) query.set('from', from)
   if (to) query.set('to', to)
   return query.size ? `?${query}` : ''

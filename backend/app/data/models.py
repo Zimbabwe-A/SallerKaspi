@@ -17,7 +17,9 @@ class Product:
     category_id: str
     cost_price: int
     base_price: int
+    weight_kg: float
     base_daily: float  # средний спрос, шт/день — только для генерации
+    kaspi_code: str | None = None  # код карточки на kaspi.kz (для ссылки и поиска конкурентов)
 
 
 @dataclass(frozen=True)
@@ -27,12 +29,13 @@ class Order:
     product_id: int
     qty: int
     price: int
-    status: str  # delivered | cancelled | returned
+    status: str  # delivered | cancelled | returned | active (ещё в пути)
     city: str
     commission: int
     delivery: int
     penalty: int
     cost: int
+    order_key: str = ""  # номер заказа Kaspi: в одном заказе бывает несколько товаров
 
     @property
     def revenue(self) -> int:
@@ -75,6 +78,12 @@ class Dataset:
     market: dict[int, list[MarketDay]]  # product_id -> история по дням
     stock: dict[int, StockState]
     orders_by_day: dict[date, list[Order]] = field(default_factory=dict)
+    source: str = "test"  # test — тестовые данные, kaspi — настоящий магазин
+    shop_id: str = "demo"
+    name: str = "Демо-магазин"
+    stock_known: bool = True  # есть ли данные об остатках
+    market_known: bool = True  # есть ли цены конкурентов
+    synced_at: str | None = None  # когда последний раз загружали из Kaspi
 
     def __post_init__(self) -> None:
         for order in self.orders:

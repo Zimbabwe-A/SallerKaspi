@@ -21,6 +21,8 @@ export interface Totals {
   tax: number
   profit_after_tax: number
   avg_check: number
+  pending_orders: number
+  pending_amount: number
 }
 
 export interface Summary {
@@ -59,7 +61,7 @@ export interface Category {
   commission: number
 }
 
-export type StockStatus = 'out' | 'critical' | 'low' | 'ok'
+export type StockStatus = 'out' | 'critical' | 'low' | 'ok' | 'unknown'
 export type Abc = 'A' | 'B' | 'C'
 
 export interface ProductRow {
@@ -82,6 +84,9 @@ export interface ProductRow {
   stock: number
   days_of_cover: number | null
   stock_status: StockStatus
+  kaspi_url: string | null
+  image_url: string | null
+  cost_price: number | null
   rating: number
   reviews: number
 }
@@ -188,8 +193,84 @@ export interface Settings {
   currency: string
   tax_rate: number
   categories: Category[]
-  delivery_tiers: { up_to: number | null; fee: number }[]
+  delivery: {
+    seller_city: string
+    small_order_limit: number
+    by_order_sum: DeliveryTier[]
+    by_weight: DeliveryTier[]
+  }
   data_period: Period
 }
 
 export type ProductSort = 'revenue' | 'profit' | 'units' | 'margin_pct' | 'stock' | 'days_of_cover' | 'name'
+
+export interface DeliveryTier {
+  up_to: number | null
+  city: number
+  country: number
+  express: number | null
+}
+
+export type BotStrategy = 'first' | 'second'
+
+export interface BotRule {
+  enabled: boolean
+  min_price: number
+  max_price: number
+  step: number
+  strategy: BotStrategy
+  protect: boolean
+}
+
+export interface BotRow {
+  product_id: number
+  sku: string
+  name: string
+  price: number
+  min_competitor: number | null
+  sellers: number
+  rule: BotRule | null
+  position: number
+  next_price: number | null
+  next_position: number | null
+  next_kind: 'target' | 'min' | 'max' | 'alone' | null
+  next_reason: string | null
+  cost: number | null
+  break_even: number | null
+  profit_now: number | null
+  next_profit: number | null
+  first_place_price: number | null
+  first_place_profit: number | null
+}
+
+export interface BotCounts {
+  total: number
+  in_bot: number
+  first: number
+  second: number
+  at_min: number
+  at_max: number
+}
+
+export interface BotStatus {
+  enabled: boolean
+  dry_run: boolean
+  last_run: string | null
+  interval_seconds: number
+  source: string
+  feed_path: string
+  feed_ready: boolean
+  counts: BotCounts
+  rows: BotRow[]
+}
+
+export interface BotLogEntry {
+  time: string
+  product_id: number
+  sku: string
+  name: string
+  old_price: number
+  new_price: number
+  reason: string
+  dry_run: boolean
+}

@@ -42,7 +42,7 @@ def alerts(ds: Dataset) -> list[schemas.Alert]:
                 ))
 
         rating_before = market.market_day(ds, product.id, week_ago).rating
-        if current.rating <= rating_before - 0.05:
+        if ds.market_known and current.rating <= rating_before - 0.05:
             result.append(schemas.Alert(
                 type="rating_drop", severity="low", date=current.day, **base,
                 message=f"Рейтинг снизился с {rating_before} до {current.rating} за неделю.",

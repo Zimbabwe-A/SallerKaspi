@@ -6,6 +6,7 @@ from datetime import date, timedelta
 from app import config, schemas
 from app.data.generator import delivery_fee
 from app.data.models import Dataset, Order, Product
+from app import economics
 from app.services import market
 
 
@@ -18,8 +19,14 @@ def orders_between(ds: Dataset, start: date, end: date) -> list[Order]:
     return result
 
 
+def _order_count(orders: list[Order], status: str | None = None) -> int:
+    """Число заказов (а не позиций): товары одного заказа Kaspi считаем одним заказом."""
+    return len({o.order_key or o.id for o in orders if status is None or o.status == status})
+
+
 def totals(orders: list[Order]) -> schemas.Totals:
     delivered = [o for o in orders if o.status == "delivered"]
+    delivered_orders = _order_count(delivered)
     revenue = sum(o.revenue for o in delivered)
     commission = sum(o.commission for o in orders)
     delivery = sum(o.delivery for o in orders)
@@ -29,10 +36,10 @@ def totals(orders: list[Order]) -> schemas.Totals:
     profit = revenue - kaspi_total - cost
     tax = round(revenue * config.TAX_RATE)
     return schemas.Totals(
-        orders=len(orders),
+        orders=_order_count(orders),
         units=sum(o.qty for o in delivered),
-        cancelled=sum(1 for o in orders if o.status == "cancelled"),
-        returned=sum(1 for o in orders if o.status == "returned"),
+        cancelled=_order_count(orders, "cancelled"),
+        returned=_order_count(orders, "returned"),
         revenue=revenue,
         commission=commission,
         delivery=delivery,
@@ -43,7 +50,10 @@ def totals(orders: list[Order]) -> schemas.Totals:
         profit=profit,
         tax=tax,
         profit_after_tax=profit - tax,
-        avg_check=round(revenue / len(delivered)) if delivered else 0,
+        avg_check=round(revenue / delivered_orders) if delivered_orders else 0,
+        # Заказы ещё в пути: Kaspi засчитает их в выручку после выдачи покупателю.
+        pending_orders=_order_count(orders, "active"),
+        pending_amount=sum(o.price * o.qty for o in orders if o.status == "active"),
     )
 
 
@@ -74,7 +84,7 @@ def breakdown(ds: Dataset, start: date, end: date) -> schemas.Breakdown:
     parts = [
         ("commission", "Комиссия Kaspi", t.commission),
         ("delivery", "Доставка", t.delivery),
-        ("penalties", "Штрафы", t.penalties),
+        *([("penalties", "Штрафы", t.penalties)] if t.penalties else []),
         ("cost", "Себестоимость", t.cost),
         ("tax", "Налог", t.tax),
         ("profit", "Прибыль", t.profit_after_tax),
@@ -123,6 +133,12 @@ def stock_status(quantity: int, days_of_cover: float | None) -> str:
 def stock_row(ds: Dataset, product: Product) -> schemas.StockRow:
     state = ds.stock[product.id]
     velocity = sales_velocity(ds, product.id)
+    if not ds.stock_known:  # Kaspi API остатки не отдаёт
+        return schemas.StockRow(
+            product_id=product.id, sku=product.sku, name=product.name, category_id=product.category_id,
+            quantity=0, avg_daily_sales=velocity, days_of_cover=None, status="unknown",
+            incoming_quantity=0, incoming_date=None,
+        )
     cover = round(state.quantity / velocity, 1) if velocity > 0 else None
     return schemas.StockRow(
         product_id=product.id,
@@ -139,7 +155,7 @@ def stock_row(ds: Dataset, product: Product) -> schemas.StockRow:
 
 
 def stock(ds: Dataset) -> list[schemas.StockRow]:
-    order = {"out": 0, "critical": 1, "low": 2, "ok": 3}
+    order = {"out": 0, "critical": 1, "low": 2, "ok": 3, "unknown": 4}
     rows = [stock_row(ds, p) for p in ds.products.values()]
     return sorted(rows, key=lambda r: (order[r.status], r.days_of_cover if r.days_of_cover is not None else 1e9))
 
@@ -192,13 +208,16 @@ def product_rows(ds: Dataset, start: date, end: date) -> list[schemas.ProductRow
             stock_status=stock_info.status,
             rating=last.rating,
             reviews=last.reviews,
+            kaspi_url=f"https://kaspi.kz/shop/p/-{product.kaspi_code}/" if product.kaspi_code else None,
+            cost_price=economics.cost_of(ds, product),
         ))
     return rows
 
 
 def unit_economics(ds: Dataset, product: Product, price: int) -> schemas.UnitEconomics:
     commission = round(price * ds.categories[product.category_id].commission)
-    delivery = delivery_fee(price)
+    # Одна штука, направление «по Казахстану» (большинство заказов не из города продавца).
+    delivery = delivery_fee(price, product.weight_kg)
     tax = round(price * config.TAX_RATE)
     profit = price - commission - delivery - product.cost_price - tax
     return schemas.UnitEconomics(

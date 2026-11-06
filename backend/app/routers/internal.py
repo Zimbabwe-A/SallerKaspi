@@ -73,6 +73,12 @@ def get_settings(ds: DatasetDep):
         currency=config.CURRENCY,
         tax_rate=config.TAX_RATE,
         categories=get_categories(ds),
-        delivery_tiers=[schemas.DeliveryTier(up_to=limit, fee=fee) for limit, fee in config.DELIVERY_TIERS],
+        delivery=schemas.DeliveryTariffs(
+            seller_city=config.SELLER_CITY,
+            small_order_limit=config.DELIVERY_SMALL_ORDER_LIMIT,
+            by_order_sum=[schemas.DeliveryTier(up_to=u, city=c, country=k) for u, c, k in config.DELIVERY_SMALL_TIERS],
+            by_weight=[schemas.DeliveryTier(up_to=u, city=c, country=k, express=e)
+                       for u, c, k, e in config.DELIVERY_WEIGHT_TIERS],
+        ),
         data_period=schemas.Period(start=ds.start, end=ds.end),
     )

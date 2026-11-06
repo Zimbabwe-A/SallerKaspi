@@ -1,5 +1,4 @@
 import { useSettings } from '../api/client'
-import { dateRange } from '../lib/format'
 import { shiftDate, usePeriod } from '../lib/period'
 
 const PRESETS = [
@@ -55,7 +54,6 @@ export function PeriodPicker() {
           className="bg-transparent"
         />
       </label>
-      <span className="hidden text-sm text-muted sm:inline">{dateRange(start, end)}</span>
     </div>
   )
 }

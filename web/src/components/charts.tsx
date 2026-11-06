@@ -1,15 +1,15 @@
 import { useState } from 'react'
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { BreakdownItem } from '../api/types'
 import { money, numberCompact, pct, shortDate } from '../lib/format'
 
 /** Цвета частей цены — фиксированы за статьёй, а не за порядком. */
 const BREAKDOWN_COLORS: Record<string, string> = {
-  commission: 'var(--s1)',
-  delivery: 'var(--s2)',
+  commission: 'var(--critical)', // то, что забирает Kaspi, — красным, как «Удержал Kaspi»
+  delivery: 'var(--s4)', // оранжевый
   penalties: 'var(--s3)',
-  cost: 'var(--s4)',
-  tax: 'var(--s5)',
+  cost: 'var(--s3)',
+  tax: 'var(--s7)', // жёлтый
   profit: 'var(--s6)',
 }
 
@@ -20,17 +20,17 @@ export function BreakdownBar({ items, revenue }: { items: BreakdownItem[]; reven
 
   return (
     <div>
-      <div className="flex h-9 gap-0.5 overflow-hidden rounded-lg" onMouseLeave={() => setHovered(null)}>
+      <div className="flex h-10 gap-1 overflow-hidden rounded-xl shadow-inner" onMouseLeave={() => setHovered(null)}>
         {visible.map((item) => (
           <div
             key={item.key}
             role="img"
             aria-label={`${item.label}: ${money(item.amount)}, ${pct(item.share)}`}
             onMouseEnter={() => setHovered(item.key)}
-            className="h-full min-w-1 transition-opacity first:rounded-l-lg last:rounded-r-lg"
+            className="h-full min-w-1 rounded-md transition-opacity first:rounded-l-xl last:rounded-r-xl"
             style={{
               width: `${(item.amount / revenue) * 100}%`,
-              background: BREAKDOWN_COLORS[item.key],
+              background: `linear-gradient(180deg, color-mix(in srgb, ${BREAKDOWN_COLORS[item.key]} 72%, white), ${BREAKDOWN_COLORS[item.key]} 70%)`,
               opacity: hovered && hovered !== item.key ? 0.35 : 1,
             }}
           />
@@ -126,7 +126,15 @@ export function DailyLineChart<T extends { date: string }>({ data, series, heigh
         </ul>
       )}
       <ResponsiveContainer width="100%" height={height}>
-        <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <defs>
+            {series.map((s) => (
+              <linearGradient key={s.key} id={`fill-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={s.color} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={s.color} stopOpacity={0} />
+              </linearGradient>
+            ))}
+          </defs>
           <CartesianGrid vertical={false} stroke="var(--grid)" />
           <XAxis
             dataKey="date"
@@ -156,20 +164,21 @@ export function DailyLineChart<T extends { date: string }>({ data, series, heigh
             )}
           />
           {series.map((s) => (
-            <Line
+            <Area
               key={s.key}
               type="monotone"
               dataKey={s.key}
               name={s.label}
+              fill={s.dashed ? 'none' : `url(#fill-${s.key})`}
               stroke={s.color}
-              strokeWidth={2}
+              strokeWidth={3}
               strokeDasharray={s.dashed ? '4 3' : undefined}
               dot={false}
-              activeDot={{ r: 4, stroke: 'var(--surface)', strokeWidth: 2 }}
+              activeDot={{ r: 5, stroke: 'var(--surface)', strokeWidth: 2 }}
               isAnimationActive={false}
             />
           ))}
-        </LineChart>
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   )

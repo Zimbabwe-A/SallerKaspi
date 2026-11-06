@@ -24,11 +24,21 @@ def round_price(value: float) -> int:
     return max(10, int(round(value / 10)) * 10)
 
 
-def delivery_fee(price: int) -> int:
-    for limit, fee in config.DELIVERY_TIERS:
-        if limit is None or price <= limit:
-            return fee
-    raise ValueError("DELIVERY_TIERS must end with a tier without limit")
+def delivery_fee(order_sum: int, weight_kg: float, city: str | None = None) -> int:
+    """Тариф Kaspi Доставки за заказ, ₸ без НДС.
+
+    До 10 000 ₸ считается по сумме заказа, от 10 000 ₸ — по весу.
+    city=None — направление «по Казахстану» (для расчёта экономики одной штуки).
+    """
+    in_city = city == config.SELLER_CITY
+    if order_sum < config.DELIVERY_SMALL_ORDER_LIMIT:
+        for limit, city_fee, country_fee in config.DELIVERY_SMALL_TIERS:
+            if order_sum < limit:
+                return round(city_fee if in_city else country_fee)
+    for limit, city_fee, country_fee, _express in config.DELIVERY_WEIGHT_TIERS:
+        if limit is None or weight_kg <= limit:
+            return round(city_fee if in_city else country_fee)
+    raise ValueError("DELIVERY_WEIGHT_TIERS must end with a tier without limit")
 
 
 def poisson(rng: random.Random, lam: float) -> int:
@@ -60,7 +70,7 @@ def build_categories() -> dict[str, Category]:
 def build_products(rng: random.Random) -> dict[int, Product]:
     products: dict[int, Product] = {}
     for category_id, items in CATALOG.items():
-        for n, (name, low, high) in enumerate(items, start=1):
+        for n, (name, low, high, weight_kg) in enumerate(items, start=1):
             pid = len(products) + 1
             base_price = round_price(rng.uniform(low, high))
             products[pid] = Product(
@@ -70,6 +80,7 @@ def build_products(rng: random.Random) -> dict[int, Product]:
                 category_id=category_id,
                 cost_price=round_price(base_price * rng.uniform(0.5, 0.72)),
                 base_price=base_price,
+                weight_kg=weight_kg,
                 base_daily=min(8.0, max(0.2, rng.lognormvariate(0, 0.8))),
             )
     return products
@@ -182,7 +193,7 @@ def generate(seed: int = config.SEED, days: int = config.HISTORY_DAYS, end: date
             city=city,
             commission=round(price * qty * commission_rate) if delivered else 0,
             # Доставку платим и за выкупленный, и за возвращённый заказ.
-            delivery=delivery_fee(price) if status != "cancelled" else 0,
+            delivery=delivery_fee(price * qty, product.weight_kg * qty, city) if status != "cancelled" else 0,
             penalty=penalty,
             cost=product.cost_price * qty if delivered else 0,
         ))

@@ -3,30 +3,37 @@
 /* Цвета задаём ролями: светлая и тёмная тема меняют значения в одном месте. */
 :root {
   color-scheme: light;
-  --page: #f4f4f1;
-  --surface: #fcfcfb;
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --muted: #898781;
-  --grid: #e1e0d9;
-  --axis: #c3c2b7;
-  --border: rgba(11, 11, 11, 0.1);
-  --hover: rgba(11, 11, 11, 0.04);
+  /* Палитра: Sand Beige 60% (фон) · Forest Green 30% (текст, шапка, крупные блоки) · Electric Purple 10% (кнопки, ссылки, акценты). */
+  --page: #e8dcc4;
+  --surface: #f5efe3;
+  --ink: #1f3d2b;
+  --ink-2: #4a5e50;
+  --muted: #5c6b5e;
+  --grid: #ddd1b8;
+  --axis: #c2b292;
+  --border: rgba(31, 61, 43, 0.14);
+  --hover: rgba(31, 61, 43, 0.06);
+
+  --brand: #1f3d2b; /* боковое меню и шапка */
+  --on-brand: #f5efe3;
+  --accent: #6d3fd9; /* ссылки: фиолетовый потемнее, чтобы читался на бежевом */
+  --cta: #8b5cf6; /* кнопки призыва к действию: белый жирный текст */
 
   /* Категориальные цвета серий — фиксированный порядок. */
-  --s1: #2a78d6;
-  --s2: #eb6834;
-  --s3: #1baf7a;
-  --s4: #eda100;
-  --s5: #e87ba4;
-  --s6: #008300;
+  --s1: #2f5d42;
+  --s2: #8b5cf6;
+  --s3: #8c6b43; /* себестоимость — коричневый */
+  --s4: #e07b1f; /* доставка — оранжевый */
+  --s5: #b07cc6;
+  --s6: #4e8c5e;
+  --s7: #ebc03a; /* налог — жёлтый */
 
   /* Статусы — только вместе с иконкой и подписью. */
-  --good: #006300;
-  --good-fill: #0ca30c;
-  --warning: #fab219;
-  --serious: #ec835a;
-  --critical: #d03b3b;
+  --good: #1f6b3a;
+  --good-fill: #2e8b4c;
+  --warning: #e0a526;
+  --serious: #d98e5f;
+  --critical: #b83a2e;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -51,6 +58,10 @@
 
     --good: #0ca30c;
     --good-fill: #0ca30c;
+    --accent: #a78bfa;
+    --brand: #14281c;
+    --on-brand: #f0efec;
+    --cta: #8b5cf6;
   }
 }
 
@@ -63,7 +74,10 @@
   --color-muted: var(--muted);
   --color-line: var(--border);
   --color-hover: var(--hover);
-  --color-accent: var(--s1);
+  --color-accent: var(--accent);
+  --color-cta: var(--cta);
+  --color-brand: var(--brand);
+  --color-on-brand: var(--on-brand);
   --color-good: var(--good);
   --color-warning: var(--warning);
   --color-serious: var(--serious);
@@ -71,7 +85,12 @@
 }
 
 body {
-  background: var(--page);
+  /* Мягкое фиолетовое и зелёное свечение по углам — фон не плоский. */
+  background:
+    radial-gradient(900px 420px at 100% -10%, color-mix(in srgb, var(--cta) 12%, transparent), transparent 70%),
+    radial-gradient(700px 380px at -10% 110%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 70%),
+    var(--page);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -79,4 +98,24 @@ body {
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Карточки: двойная мягкая тень вместо плоской. */
+.card {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 100%, white 0%), var(--surface));
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px rgba(31, 61, 43, 0.06), 0 10px 28px -14px rgba(31, 61, 43, 0.28);
+}
+
+/* Боковое меню: тёмно-зелёный градиент с лёгким фиолетовым отблеском внизу. */
+.brand-gradient {
+  background:
+    radial-gradient(260px 220px at 20% 105%, color-mix(in srgb, var(--cta) 32%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--brand) 88%, white 12%), var(--brand) 45%, color-mix(in srgb, var(--brand) 85%, black 15%));
+}
+
+/* Акцентная кнопка: фиолетовый градиент. */
+.cta-gradient {
+  background: linear-gradient(135deg, var(--cta), color-mix(in srgb, var(--cta) 70%, var(--accent) 30%));
+  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--cta) 60%, transparent);
 }
