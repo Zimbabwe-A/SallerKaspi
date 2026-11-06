@@ -40,14 +40,20 @@ function OnOff({ on, onChange, disabled }: { on: boolean; onChange: (value: bool
       aria-label={on ? 'Бот включён для товара' : 'Бот выключен для товара'}
       disabled={disabled}
       onClick={() => onChange(!on)}
-      className={`relative flex h-8 w-[76px] shrink-0 items-center rounded-full border-2 border-white/70 shadow-inner transition-colors disabled:opacity-50 ${
-        on ? 'bg-good-fill' : 'bg-critical'
+      className={`relative h-[34px] w-[84px] shrink-0 rounded-full transition-all disabled:opacity-50 ${
+        on ? 'bg-good-fill shadow-[0_0_14px_rgba(46,139,76,0.55)]' : 'bg-pink shadow-[0_0_16px_rgba(255,46,147,0.6)]'
       }`}
     >
       <span
-        className={`absolute top-1/2 h-6 w-8 -translate-y-1/2 rounded-full bg-white shadow transition-all ${on ? 'left-[38px]' : 'left-1'}`}
+        className={`absolute top-[4px] size-[26px] rounded-full bg-white shadow-md transition-all ${on ? 'left-[54px]' : 'left-[4px]'}`}
       />
-      <span className={`absolute text-xs font-bold tracking-wide text-white ${on ? 'left-2.5' : 'right-2.5'}`}>{on ? 'ON' : 'OFF'}</span>
+      <span
+        className={`absolute top-1/2 -translate-y-1/2 text-[13px] font-extrabold leading-none tracking-wider text-white ${
+          on ? 'left-[14px]' : 'right-[11px]'
+        }`}
+      >
+        {on ? 'ON' : 'OFF'}
+      </span>
     </button>
   )
 }

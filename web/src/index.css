@@ -17,7 +17,9 @@
   --brand: #1f3d2b; /* боковое меню и шапка */
   --on-brand: #f5efe3;
   --accent: #6d3fd9; /* ссылки: фиолетовый потемнее, чтобы читался на бежевом */
-  --cta: #8b5cf6; /* кнопки призыва к действию: белый жирный текст */
+  --cta: #a338ff; /* яркий неоновый фиолетовый: кнопки и акценты */
+  --cta-2: #7b2bff; /* второй тон градиента */
+  --pink: #ff2e93; /* ярко-розовый: «выключено» */
 
   /* Категориальные цвета серий — фиксированный порядок. */
   --s1: #2f5d42;
@@ -61,7 +63,9 @@
     --accent: #a78bfa;
     --brand: #14281c;
     --on-brand: #f0efec;
-    --cta: #8b5cf6;
+    --cta: #b45cff;
+    --cta-2: #8b3dff;
+    --pink: #ff4fa6;
   }
 }
 
@@ -76,6 +80,7 @@
   --color-hover: var(--hover);
   --color-accent: var(--accent);
   --color-cta: var(--cta);
+  --color-pink: var(--pink);
   --color-brand: var(--brand);
   --color-on-brand: var(--on-brand);
   --color-good: var(--good);
@@ -117,14 +122,17 @@ body {
 /* Боковое меню: тёмно-зелёный градиент с лёгким фиолетовым отблеском внизу. */
 .brand-gradient {
   background:
-    radial-gradient(260px 220px at 20% 105%, color-mix(in srgb, var(--cta) 32%, transparent), transparent 70%),
+    radial-gradient(320px 260px at 15% 110%, color-mix(in srgb, var(--cta) 55%, transparent), transparent 70%),
+    radial-gradient(260px 200px at 110% -10%, color-mix(in srgb, var(--cta) 30%, transparent), transparent 70%),
     linear-gradient(180deg, color-mix(in srgb, var(--brand) 88%, white 12%), var(--brand) 45%, color-mix(in srgb, var(--brand) 85%, black 15%));
 }
 
 /* Акцентная кнопка: фиолетовый градиент. */
 .cta-gradient {
-  background: linear-gradient(135deg, var(--cta), color-mix(in srgb, var(--cta) 70%, var(--accent) 30%));
-  box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--cta) 60%, transparent);
+  background: linear-gradient(135deg, var(--cta), var(--cta-2));
+  /* неоновое свечение */
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--cta) 40%, white), 0 8px 24px -6px color-mix(in srgb, var(--cta) 75%, transparent),
+    0 0 18px color-mix(in srgb, var(--cta) 45%, transparent);
 }
 
 /* Жирнее: обычный текст — средний (500), «средний» — полужирный, «полужирный» — жирный. */
@@ -133,3 +141,10 @@ body {
 .font-semibold { font-weight: 700; }
 .font-bold { font-weight: 800; }
 th, h1, h2, h3, b, strong { font-weight: 700; }
+
+/* Пункт меню с неоновой подсветкой. */
+.nav-active {
+  background: linear-gradient(135deg, var(--cta), var(--cta-2));
+  color: #fff;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--cta) 55%, transparent);
+}

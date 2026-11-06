@@ -4,6 +4,14 @@ import { currentShop, useShops, useSource } from '../api/client'
 import { usePeriodSearch } from '../lib/period'
 import { PeriodPicker } from './PeriodPicker'
 
+// Значки пунктов меню (линии 24×24).
+const ICONS: Record<string, string> = {
+  '/': 'M4 19V9M10 19V5M16 19v-7M22 19H2',
+  '/products': 'M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4M12 11v10',
+  '/market': 'M3 17l6-6 4 4 8-8M15 7h6v6',
+  '/bot': 'M12 3v3M7 9h10a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-4a3 3 0 0 1 3-3zM9 14h.01M15 14h.01',
+}
+
 const NAV = [
   { to: '/', label: 'Аналитика магазина', end: true },
   { to: '/products', label: 'Товары', end: false },
@@ -11,16 +19,26 @@ const NAV = [
   { to: '/bot', label: 'Бот цен', end: false },
 ]
 
+function NavIcon({ to }: { to: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className="size-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d={ICONS[to]} />
+    </svg>
+  )
+}
+
 function Logo() {
   return (
     <div className="flex items-center gap-2.5">
-      <div className="grid size-8 place-items-center rounded-lg bg-on-brand text-brand">
+      <div className="cta-gradient grid size-9 place-items-center rounded-xl text-white">
         <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M3 3v18h18" strokeLinecap="round" />
           <path d="m7 15 4-4 3 3 5-6" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
-      <span className="font-semibold">Аналитика Kaspi</span>
+      <span className="text-lg font-bold tracking-tight">
+        Аналитика <span className="bg-gradient-to-r from-[#d48bff] to-[#ff7ac6] bg-clip-text text-transparent">Kaspi</span>
+      </span>
     </div>
   )
 }
@@ -81,11 +99,12 @@ export function Layout() {
       end={item.end}
       onClick={() => setMenuOpen(false)}
       className={({ isActive }) =>
-        `rounded-lg px-3 py-2 text-sm transition-colors ${
-          isActive ? 'bg-on-brand font-semibold text-brand shadow-sm' : 'text-on-brand/80 hover:bg-on-brand/10 hover:text-on-brand'
+        `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[15px] font-semibold tracking-tight transition-all ${
+          isActive ? 'nav-active' : 'text-on-brand/85 hover:bg-white/10 hover:text-white'
         }`
       }
     >
+      <NavIcon to={item.to} />
       {item.label}
     </NavLink>
   ))
@@ -104,9 +123,12 @@ export function Layout() {
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
-            className="rounded-lg bg-on-brand px-3 py-1.5 text-sm text-brand"
+            className="cta-gradient inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold text-white"
             aria-expanded={menuOpen}
           >
+            <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+              <path d={menuOpen ? 'M6 6l12 12M18 6L6 18' : 'M4 7h16M4 12h16M4 17h16'} />
+            </svg>
             Меню
           </button>
         </div>
