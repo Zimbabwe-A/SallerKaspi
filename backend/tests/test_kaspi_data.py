@@ -185,3 +185,28 @@ def test_real_shop_market_and_bot_test_mode_only(shop, monkeypatch):
         # Настройки бота настоящего магазина — отдельно от демо, прайс-лист для Kaspi не создаётся.
         assert (sync.shop_dir("main") / "bot_state.json").exists()
         assert not st.FEED_FILE.exists() or "207540642" not in st.FEED_FILE.read_text()
+
+
+def test_autoupdate_cycle_refreshes_market_and_bot_stays_in_test_mode(shop, monkeypatch):
+    from app import config
+    from app.bot import storage as st
+    from app.kaspi import autoupdate, market
+    monkeypatch.setattr(config, "KASPI_MERCHANT_ID", "30465550")
+    monkeypatch.setattr(market, "PAUSE_SECONDS", 0)
+    monkeypatch.setattr(autoupdate.sync, "sync", lambda *a, **k: None)  # без сети
+    monkeypatch.setattr(market, "product_codes", lambda shop_id: ["178596339"])
+    monkeypatch.setattr(market, "fetch_sellers", lambda code, city: [
+        {"merchant_id": "111", "name": "Конкурент", "price": 249, "rating": 4.6, "reviews": 1, "delivery": "TODAY"},
+        {"merchant_id": "30465550", "name": "Мы", "price": 299, "rating": 4.9, "reviews": 1, "delivery": "TODAY"},
+    ])
+    from app.data import store
+    pid = next(p.id for p in store.get_dataset("main").products.values() if p.sku == "207540642")
+    state = st.load_state("main")
+    state.enabled, state.dry_run = True, False  # даже если кто-то выключил тестовый режим в файле
+    state.rules[str(pid)] = st.ProductRule(enabled=True, min_price=100, max_price=500, protect=False)
+    st.save_state(state, "main")
+    result = autoupdate.run_cycle()
+    assert result["market"].startswith("ok") and "тестовый режим" in result["bot"]
+    log = st.read_log(shop="main")
+    assert log and all(e["dry_run"] for e in log) and log[0]["new_price"] == 248
+    assert st.load_state("main").prices == {}  # цена в «наших» данных не поменялась

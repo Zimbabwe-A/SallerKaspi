@@ -39,6 +39,9 @@ KASPI_MERCHANT_ID = os.environ.get("KASPI_MERCHANT_ID", "").strip()
 KASPI_CABINET_EMAIL = os.environ.get("KASPI_CABINET_EMAIL", "").strip()
 KASPI_CABINET_PASSWORD = os.environ.get("KASPI_CABINET_PASSWORD", "").strip()
 KASPI_STORE_ID = os.environ.get("KASPI_STORE_ID", "").strip() or "PP1"
+# Как часто автообновление (python -m app.kaspi.autoupdate) обновляет заказы, конкурентов и бота.
+AUTO_UPDATE_MINUTES = int(os.environ.get("AUTO_UPDATE_MINUTES", "").strip() or "5")
+
 # Город, для которого смотрим цены конкурентов (код Kaspi). 710000000 — Астана.
 KASPI_CITY_ID = os.environ.get("KASPI_CITY_ID", "").strip() or "710000000"
 KASPI_DEFAULT_BRAND = os.environ.get("KASPI_DEFAULT_BRAND", "").strip() or "NoName"

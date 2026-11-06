@@ -75,6 +75,31 @@ function Summary({ status }: { status: BotStatus }) {
   )
 }
 
+const clock = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : null
+
+/** Когда обновлялись цены конкурентов и идёт ли автообновление. */
+function Freshness() {
+  const source = useSource()
+  const s = source.data
+  if (!s || s.source !== 'kaspi') return null
+  const auto = s.auto_update
+  const minutes = auto?.interval_minutes ?? 5
+  // Работает, если программа давала о себе знать не позже двух интервалов (+ время прохода) назад.
+  const last = auto?.heartbeat ?? auto?.finished_at
+  const alive = !!last && Date.now() - new Date(last).getTime() < (minutes * 2 + 3) * 60_000
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-4 text-sm">
+      <span className={`inline-flex items-center gap-1.5 font-semibold ${alive ? 'text-good' : 'text-muted'}`}>
+        <span className={`size-2.5 rounded-full ${alive ? 'bg-good-fill' : 'bg-line'}`} aria-hidden />
+        {alive ? (auto?.running ? 'Автообновление: обновляю сейчас…' : `Автообновление: каждые ${minutes} мин`) : 'Автообновление выключено'}
+      </span>
+      <span className="text-ink-2">Цены конкурентов: {clock(s.market_synced_at) ?? 'ещё не загружены'}</span>
+      {auto?.error && <span className="text-critical">последний раз ошибка: {auto.error}</span>}
+    </div>
+  )
+}
+
 function Controls({ status }: { status: BotStatus }) {
   const toggle = useBotSwitch()
   const run = useBotRun()
@@ -142,6 +167,8 @@ function Controls({ status }: { status: BotStatus }) {
           </p>
         </div>
       </div>
+
+      <Freshness />
 
       {(toggle.error || run.error) && (
         <p className="mt-3 text-sm text-critical">{(toggle.error ?? run.error)?.message}</p>

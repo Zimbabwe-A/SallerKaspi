@@ -62,4 +62,20 @@ def get_source(ds: DatasetDep):
     return {"source": ds.source, "name": ds.name, "stock_known": ds.stock_known,
             "market_known": ds.market_known, "synced_at": ds.synced_at,
             "data_start": ds.start, "data_end": ds.end,
-            "products": len(ds.products), "products_with_cost": with_cost}
+            "products": len(ds.products), "products_with_cost": with_cost,
+            "market_synced_at": _market_time(ds), "auto_update": _auto_update(ds)}
+
+
+def _market_time(ds):
+    if ds.source == "test":
+        return None
+    from app.kaspi.market import load_market
+    snapshot = load_market(ds.shop_id)
+    return snapshot.get("synced_at") if snapshot else None
+
+
+def _auto_update(ds):
+    if ds.source == "test":
+        return None
+    from app.kaspi.autoupdate import load_status
+    return load_status()

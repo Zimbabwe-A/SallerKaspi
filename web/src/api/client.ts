@@ -91,10 +91,21 @@ export interface Source {
   synced_at: string | null
   products: number
   products_with_cost: number
+  market_synced_at?: string | null
+  auto_update?: {
+    interval_minutes: number
+    finished_at?: string
+    heartbeat?: string
+    running?: boolean
+    market?: string
+    bot?: string
+    error?: string
+  } | null
 }
 
 export const useShops = () => useQuery({ queryKey: ['shops'], queryFn: () => get<Shop[]>('/shops') })
-export const useSource = () => useQuery({ queryKey: ['source'], queryFn: () => get<Source>('/source'), retry: false })
+export const useSource = () =>
+  useQuery({ queryKey: ['source'], queryFn: () => get<Source>('/source'), retry: false, refetchInterval: 30_000 })
 
 export const useBot = () => useQuery({ queryKey: ['bot'], queryFn: () => get<BotStatus>('/bot'), refetchInterval: 30_000 })
 export const useBotLog = () =>
