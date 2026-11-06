@@ -2,71 +2,40 @@
 
 /* Цвета задаём ролями: светлая и тёмная тема меняют значения в одном месте. */
 :root {
-  color-scheme: light;
-  /* Палитра: Sand Beige 60% (фон) · Forest Green 30% (текст, шапка, крупные блоки) · Electric Purple 10% (кнопки, ссылки, акценты). */
-  --page: #e8dcc4;
-  --surface: #f5efe3;
-  --ink: #1f3d2b;
-  --ink-2: #4a5e50;
-  --muted: #5c6b5e;
-  --grid: #ddd1b8;
-  --axis: #c2b292;
-  --border: rgba(31, 61, 43, 0.14);
-  --hover: rgba(31, 61, 43, 0.06);
+  color-scheme: dark;
+  /* Палитра: тёмный графит (фон) · мятно-белый (текст) · неоновый фиолетовый и ярко-розовый (акценты). */
+  --page: #14161a;
+  --surface: #1d2026;
+  --ink: #eaf7f0; /* мятно-белый */
+  --ink-2: #b9d3c6;
+  --muted: #8ea89b;
+  --grid: #2a2e36;
+  --axis: #3a404a;
+  --border: rgba(234, 247, 240, 0.1);
+  --hover: rgba(234, 247, 240, 0.05);
 
-  --brand: #1f3d2b; /* боковое меню и шапка */
-  --on-brand: #f5efe3;
-  --accent: #6d3fd9; /* ссылки: фиолетовый потемнее, чтобы читался на бежевом */
-  --cta: #a338ff; /* яркий неоновый фиолетовый: кнопки и акценты */
-  --cta-2: #7b2bff; /* второй тон градиента */
-  --pink: #ff2e93; /* ярко-розовый: «выключено» */
+  --brand: #101216; /* боковое меню — чуть темнее фона */
+  --on-brand: #eaf7f0;
+  --accent: #c38bff; /* ссылки — светлый неоновый фиолетовый, читается на тёмном */
+  --cta: #a338ff; /* неоновый фиолетовый: кнопки и акценты */
+  --cta-2: #7b2bff;
+  --pink: #ff2e93; /* ярко-розовый */
 
   /* Категориальные цвета серий — фиксированный порядок. */
-  --s1: #2f5d42;
-  --s2: #8b5cf6;
-  --s3: #8c6b43; /* себестоимость — коричневый */
-  --s4: #e07b1f; /* доставка — оранжевый */
-  --s5: #b07cc6;
-  --s6: #4e8c5e;
-  --s7: #ebc03a; /* налог — жёлтый */
+  --s1: #5fe3a1; /* выручка на графике — мятный */
+  --s2: #b45cff; /* прибыль на графике — фиолетовый */
+  --s3: #b08a5a; /* себестоимость */
+  --s4: #ff8a3d; /* доставка — оранжевый */
+  --s5: #d58cff;
+  --s6: #3ddc84; /* прибыль в полосе — зелёный */
+  --s7: #ffd84d; /* налог — жёлтый */
 
   /* Статусы — только вместе с иконкой и подписью. */
-  --good: #1f6b3a;
-  --good-fill: #2e8b4c;
-  --warning: #e0a526;
-  --serious: #d98e5f;
-  --critical: #b83a2e;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --page: #0d0d0d;
-    --surface: #1a1a19;
-    --ink: #f0efec;
-    --ink-2: #c3c2b7;
-    --muted: #898781;
-    --grid: #2c2c2a;
-    --axis: #383835;
-    --border: rgba(255, 255, 255, 0.1);
-    --hover: rgba(255, 255, 255, 0.05);
-
-    --s1: #3987e5;
-    --s2: #d95926;
-    --s3: #199e70;
-    --s4: #c98500;
-    --s5: #d55181;
-    --s6: #008300;
-
-    --good: #0ca30c;
-    --good-fill: #0ca30c;
-    --accent: #a78bfa;
-    --brand: #14281c;
-    --on-brand: #f0efec;
-    --cta: #b45cff;
-    --cta-2: #8b3dff;
-    --pink: #ff4fa6;
-  }
+  --good: #3ddc84;
+  --good-fill: #22b866;
+  --warning: #ffc24d;
+  --serious: #ff8a3d;
+  --critical: #ff5a6e;
 }
 
 @theme inline {
@@ -99,8 +68,8 @@ body {
   font-weight: 500;
   /* Мягкое фиолетовое и зелёное свечение по углам — фон не плоский. */
   background:
-    radial-gradient(900px 420px at 100% -10%, color-mix(in srgb, var(--cta) 12%, transparent), transparent 70%),
-    radial-gradient(700px 380px at -10% 110%, color-mix(in srgb, var(--brand) 10%, transparent), transparent 70%),
+    radial-gradient(900px 460px at 100% -10%, color-mix(in srgb, var(--cta) 18%, transparent), transparent 70%),
+    radial-gradient(700px 400px at 0% 110%, color-mix(in srgb, var(--pink) 10%, transparent), transparent 70%),
     var(--page);
   background-attachment: fixed;
   color: var(--ink);
@@ -116,7 +85,7 @@ body {
 .card {
   background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 100%, white 0%), var(--surface));
   border: 1px solid var(--border);
-  box-shadow: 0 1px 2px rgba(31, 61, 43, 0.06), 0 10px 28px -14px rgba(31, 61, 43, 0.28);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 12px 30px -16px rgba(0, 0, 0, 0.7);
 }
 
 /* Боковое меню: тёмно-зелёный градиент с лёгким фиолетовым отблеском внизу. */

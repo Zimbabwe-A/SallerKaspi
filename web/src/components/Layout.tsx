@@ -66,7 +66,7 @@ function ShopPicker() {
         id="shop"
         value={value}
         onChange={(e) => choose(e.target.value)}
-        className="w-full rounded-lg border-0 bg-on-brand px-2 py-1.5 text-sm text-ink"
+        className="w-full rounded-lg border border-line bg-surface px-2 py-1.5 text-sm text-ink"
       >
         {(shops.data ?? [{ id: 'demo', name: 'Демо-магазин', kind: 'test' as const, ready: true }]).map((s) => (
           <option key={s.id} value={s.id}>
@@ -111,7 +111,7 @@ export function Layout() {
 
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[260px_1fr]">
-      <aside className="brand-gradient sticky top-0 hidden h-dvh flex-col gap-6 p-4 text-on-brand md:flex">
+      <aside className="brand-gradient sticky top-0 hidden h-dvh flex-col gap-6 border-r border-line p-4 text-on-brand md:flex">
         <Logo />
         <nav className="flex flex-col gap-1">{links}</nav>
         <div className="mt-auto"><ShopPicker /></div>

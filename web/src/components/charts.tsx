@@ -30,7 +30,7 @@ export function BreakdownBar({ items, revenue }: { items: BreakdownItem[]; reven
             className="h-full min-w-1 rounded-md transition-opacity first:rounded-l-xl last:rounded-r-xl"
             style={{
               width: `${(item.amount / revenue) * 100}%`,
-              background: `linear-gradient(180deg, color-mix(in srgb, ${BREAKDOWN_COLORS[item.key]} 72%, white), ${BREAKDOWN_COLORS[item.key]} 70%)`,
+              background: `linear-gradient(180deg, color-mix(in srgb, ${BREAKDOWN_COLORS[item.key]} 88%, white), ${BREAKDOWN_COLORS[item.key]} 60%)`,
               opacity: hovered && hovered !== item.key ? 0.35 : 1,
             }}
           />
