@@ -96,24 +96,30 @@ function Controls({ status }: { status: BotStatus }) {
           </p>
           {status.last_run && <p className="mt-1 text-xs text-muted">Последний пересчёт: {time(status.last_run)}</p>}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 md:flex-nowrap">
           <button
             type="button"
             onClick={() => run.mutate()}
             disabled={run.isPending}
-            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium hover:bg-hover disabled:opacity-50"
+            className="inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-xl border border-line bg-surface px-4 text-sm font-semibold text-ink shadow-sm transition hover:bg-hover disabled:opacity-50"
           >
-            {run.isPending ? 'Считаю…' : 'Пересчитать сейчас'}
+            <svg viewBox="0 0 24 24" className={`size-4 ${run.isPending ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" />
+            </svg>
+            {run.isPending ? 'Считаю…' : 'Пересчитать'}
           </button>
           <button
             type="button"
             disabled={toggle.isPending}
             onClick={() => toggle.mutate({ enabled: !running, dry_run: status.dry_run })}
-            className={`rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50 ${
-              running ? 'border border-critical/40 bg-critical/5 text-critical' : 'bg-ink text-page'
+            className={`inline-flex h-11 items-center gap-2 whitespace-nowrap rounded-xl px-5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 ${
+              running ? 'bg-critical shadow-sm' : 'cta-gradient'
             }`}
           >
-            {running ? 'Остановить бота' : 'Запустить бота'}
+            <svg viewBox="0 0 24 24" className="size-4" fill="currentColor" aria-hidden>
+              {running ? <path d="M7 6h3.5v12H7zM13.5 6H17v12h-3.5z" /> : <path d="M8 5.5v13l10.5-6.5z" />}
+            </svg>
+            {running ? 'Остановить' : 'Запустить бота'}
           </button>
         </div>
       </div>
