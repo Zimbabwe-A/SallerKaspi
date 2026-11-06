@@ -9,7 +9,7 @@ from app.data import store
 from app.data.store import get_dataset
 from app.bot import runner, storage
 from app.deps import DatasetDep
-from app.routers import bot, internal, market
+from app.routers import bot, internal, market, waybills
 
 
 @asynccontextmanager
@@ -35,12 +35,14 @@ app.add_middleware(
     allow_origins=config.CORS_ORIGINS,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type"],
+    expose_headers=["X-Labels"],
 )
 
 app.include_router(internal.router, prefix="/api")
 app.include_router(market.router, prefix="/api")
 app.include_router(bot.router, prefix="/api")
 app.include_router(bot.write, prefix="/api")
+app.include_router(waybills.router, prefix="/api")
 
 
 @app.get("/api/health", tags=["Служебное"])

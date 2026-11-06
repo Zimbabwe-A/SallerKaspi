@@ -10,6 +10,7 @@ const ICONS: Record<string, string> = {
   '/products': 'M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4M12 11v10',
   '/market': 'M3 17l6-6 4 4 8-8M15 7h6v6',
   '/bot': 'M12 3v3M7 9h10a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-4a3 3 0 0 1 3-3zM9 14h.01M15 14h.01',
+  '/waybills': 'M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z',
 }
 
 const NAV = [
@@ -17,6 +18,7 @@ const NAV = [
   { to: '/products', label: 'Товары', end: false },
   { to: '/market', label: 'Рынок', end: false },
   { to: '/bot', label: 'Бот цен', end: false },
+  { to: '/waybills', label: 'Накладные', end: false },
 ]
 
 function NavIcon({ to }: { to: string }) {
@@ -90,7 +92,7 @@ export function Layout() {
   const search = usePeriodSearch()
   // На «Товарах» свой выбор срока, а боту период не нужен — общий выбор дат там лишний.
   const { pathname } = useLocation()
-  const showPeriod = !['/products', '/bot', '/costs'].includes(pathname)
+  const showPeriod = !['/products', '/bot', '/costs', '/waybills'].includes(pathname)
 
   const links = NAV.map((item) => (
     <NavLink

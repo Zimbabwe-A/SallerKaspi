@@ -221,3 +221,33 @@ def test_protection_can_be_turned_off(client):
 def test_cost_endpoint_rejects_foreign_site(client):
     bad = {"Content-Type": "application/json", "Origin": "https://evil.example"}
     assert client.put("/api/bot/products/1/cost", json={"cost": 1}, headers=bad).status_code == 403
+
+
+# --- Накладные: много PDF → один для термопринтера ---
+
+def _a4_waybill() -> bytes:
+    import io
+    from pypdf import PdfWriter
+    w = PdfWriter()
+    w.add_blank_page(width=595.275, height=841.875)
+    buf = io.BytesIO(); w.write(buf)
+    return buf.getvalue()
+
+
+def test_waybills_merge_to_labels(client):
+    from pypdf import PdfReader
+    import io
+    files = [("files", (f"W_{i}.pdf", _a4_waybill(), "application/pdf")) for i in range(3)]
+    r = client.post("/api/waybills/merge", files=files, data={"size": "75x120"}, headers={"Origin": "http://localhost:5173"})
+    assert r.status_code == 200 and r.headers["content-type"] == "application/pdf"
+    pages = PdfReader(io.BytesIO(r.content)).pages
+    assert len(pages) == 3 and round(float(pages[0].mediabox.width) / 72 * 25.4) == 75
+
+
+def test_waybills_reject_foreign_site_and_non_pdf(client):
+    bad = client.post("/api/waybills/merge", files=[("files", ("x.pdf", b"%PDF", "application/pdf"))],
+                      headers={"Origin": "https://evil.example"})
+    assert bad.status_code == 403
+    notpdf = client.post("/api/waybills/merge", files=[("files", ("x.txt", b"hello", "text/plain"))],
+                         headers={"Origin": "http://localhost:5173"})
+    assert notpdf.status_code == 400 and "не PDF" in notpdf.json()["detail"]

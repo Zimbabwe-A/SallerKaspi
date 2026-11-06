@@ -6,6 +6,7 @@ import { Layout } from './components/Layout'
 import './index.css'
 import { BotPage } from './pages/BotPage'
 import { CostsPage } from './pages/CostsPage'
+import { WaybillsPage } from './pages/WaybillsPage'
 import { MarketPage } from './pages/MarketPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { ProductPage } from './pages/ProductPage'
@@ -27,6 +28,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="market" element={<MarketPage />} />
             <Route path="bot" element={<BotPage />} />
             <Route path="costs" element={<CostsPage />} />
+            <Route path="waybills" element={<WaybillsPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
