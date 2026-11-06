@@ -115,10 +115,58 @@ def build(shop_id: str, name: str) -> Dataset:
             day += timedelta(days=1)
         market[pid] = history
 
+    # Остатки, текущие цены и фото — из кабинета продавца (python -m app.kaspi.cabinet), если загружены.
+    from dataclasses import replace
+
+    from app.kaspi.cabinet import load_offers
+    cabinet = load_offers(shop_id)
+    stock = {pid: StockState(pid, 0) for pid in products}
+    stock_known = False
+    if cabinet:
+        by_sku = {o["sku"]: o for o in cabinet["offers"]}
+        stock_known = True
+        for pid, product in list(products.items()):
+            offer = by_sku.get(product.sku)
+            if not offer:
+                continue  # товар снят с продажи — остаток 0
+            stock[pid] = StockState(pid, offer["stock"] or 0)
+            products[pid] = replace(product, image_url=offer.get("image"),
+                                    kaspi_code=product.kaspi_code or offer.get("master_sku") or None)
+            if offer.get("price") and market.get(pid):
+                last = market[pid][-1]
+                market[pid][-1] = MarketDay(last.day, int(offer["price"]), last.competitor_prices, last.rating, last.reviews)
+
+    # Конкуренты — с открытых страниц товаров kaspi.kz (python -m app.kaspi.market), если загружены.
+    from app.data.models import Competitor
+    from app.kaspi.market import load_market
+    competitors: dict[str, Competitor] = {}
+    market_known = False
+    snapshot = load_market(shop_id)
+    if snapshot:
+        market_known = True
+        days = {"TODAY": 0, "TOMORROW": 1, "TILL_2_DAYS": 2, "TILL_5_DAYS": 5, "TILL_7_DAYS": 7}
+        for pid, product in products.items():
+            sellers = snapshot["products"].get(product.kaspi_code or "", [])
+            if not sellers or not market.get(pid):
+                continue
+            rivals: dict[str, int] = {}
+            mine = None
+            for seller in sellers:
+                if seller["merchant_id"] == config.KASPI_MERCHANT_ID:
+                    mine = seller
+                    continue
+                cid = f"k{seller['merchant_id']}"
+                rivals[cid] = seller["price"]
+                competitors.setdefault(cid, Competitor(cid, seller["name"] or "Продавец Kaspi", seller["rating"],
+                                                       days.get(seller.get("delivery") or "", 3)))
+            last = market[pid][-1]
+            market[pid][-1] = MarketDay(last.day, mine["price"] if mine else last.my_price, rivals,
+                                        mine["rating"] if mine else last.rating, mine["reviews"] if mine else last.reviews)
+
     return Dataset(
-        start=start, end=end, categories=categories, products=products, competitors={},
-        orders=orders, market=market, stock={pid: StockState(pid, 0) for pid in products},
-        source="kaspi", shop_id=shop_id, name=name, stock_known=False, market_known=False,
+        start=start, end=end, categories=categories, products=products, competitors=competitors,
+        orders=orders, market=market, stock=stock,
+        source="kaspi", shop_id=shop_id, name=name, stock_known=stock_known, market_known=market_known,
         synced_at=cache.get("synced_at"),
     )
 

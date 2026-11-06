@@ -20,6 +20,7 @@ class Product:
     weight_kg: float
     base_daily: float  # средний спрос, шт/день — только для генерации
     kaspi_code: str | None = None  # код карточки на kaspi.kz (для ссылки и поиска конкурентов)
+    image_url: str | None = None  # фото из кабинета
 
 
 @dataclass(frozen=True)

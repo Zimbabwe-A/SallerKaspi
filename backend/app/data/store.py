@@ -31,7 +31,7 @@ def _demo() -> Dataset:
 
 
 @lru_cache(maxsize=4)
-def _kaspi(shop_id: str, mtime: float, costs_mtime: float) -> Dataset:
+def _kaspi(shop_id: str, mtime: float, costs_mtime: float, offers_mtime: float = 0.0, market_mtime: float = 0.0) -> Dataset:
     from app.kaspi.dataset import build
     name = next((s["name"] for s in shops() if s["id"] == shop_id), shop_id)
     return build(shop_id, name)
@@ -48,4 +48,7 @@ def get_dataset(shop: str = DEMO) -> Dataset:
     if not path.exists():
         raise LookupError("Заказы ещё не загружены. Запустите в Терминале: python -m app.kaspi.sync")
     costs = path.parent / "costs.json"
-    return _kaspi(shop, path.stat().st_mtime, costs.stat().st_mtime if costs.exists() else 0.0)
+    offers = path.parent / "offers.json"
+    market = path.parent / "market.json"
+    return _kaspi(shop, path.stat().st_mtime, costs.stat().st_mtime if costs.exists() else 0.0,
+                  offers.stat().st_mtime if offers.exists() else 0.0, market.stat().st_mtime if market.exists() else 0.0)

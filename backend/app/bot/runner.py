@@ -42,8 +42,13 @@ def run_once(ds: Dataset, source: CompetitorSource | None = None, force: bool = 
     if not ds.market_known:  # нет цен конкурентов — бот ничего не делает
         return []
     source = source or TestCompetitorSource(ds)
+    shop = ds.shop_id
+    # Настоящий магазин: только тестовый режим — бот считает, но ничего не меняет в Kaspi.
+    real_shop = ds.source != "test"
     with storage.lock:
-        state = storage.load_state()
+        state = storage.load_state(shop)
+        if real_shop:
+            state.dry_run = True
         if not state.enabled and not force:
             return []
 
@@ -66,9 +71,10 @@ def run_once(ds: Dataset, source: CompetitorSource | None = None, force: bool = 
                 state.prices[pid_str] = decision.price
 
         state.last_run = time
-        storage.save_state(state)
-        storage.append_log(entries)
-        storage.write_feed(render_feed(ds, state))
+        storage.save_state(state, shop)
+        storage.append_log(entries, shop)
+        if not real_shop:  # прайс-лист для Kaspi — только у демо-магазина
+            storage.write_feed(render_feed(ds, state))
         return entries
 
 

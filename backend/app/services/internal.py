@@ -210,6 +210,7 @@ def product_rows(ds: Dataset, start: date, end: date) -> list[schemas.ProductRow
             reviews=last.reviews,
             kaspi_url=f"https://kaspi.kz/shop/p/-{product.kaspi_code}/" if product.kaspi_code else None,
             cost_price=economics.cost_of(ds, product),
+            image_url=product.image_url,
             stock_entered=None if ds.stock_known else economics.load_stock(ds.shop_id).get(product.sku),
         ))
     return rows

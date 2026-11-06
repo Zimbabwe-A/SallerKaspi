@@ -60,11 +60,21 @@ def _write_private(path: Path, text: str) -> None:
     os.replace(tmp, path)
 
 
-def load_state() -> BotState:
+def _state_file(shop: str) -> Path:
+    """У каждого магазина свои настройки бота. Демо — в var/, настоящий магазин — в var/shops/<магазин>/."""
+    return STATE_FILE if shop == "demo" else VAR_DIR / "shops" / shop / "bot_state.json"
+
+
+def _log_file(shop: str) -> Path:
+    return LOG_FILE if shop == "demo" else VAR_DIR / "shops" / shop / "bot_log.jsonl"
+
+
+def load_state(shop: str = "demo") -> BotState:
     with lock:
-        if not STATE_FILE.exists():
+        path = _state_file(shop)
+        if not path.exists():
             return BotState()
-        raw = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+        raw = json.loads(path.read_text(encoding="utf-8"))
         return BotState(
             enabled=raw.get("enabled", False),
             dry_run=raw.get("dry_run", True),
@@ -74,25 +84,30 @@ def load_state() -> BotState:
         )
 
 
-def save_state(state: BotState) -> None:
+def save_state(state: BotState, shop: str = "demo") -> None:
     with lock:
-        _write_private(STATE_FILE, json.dumps(asdict(state), ensure_ascii=False, indent=2))
+        path = _state_file(shop)
+        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        _write_private(path, json.dumps(asdict(state), ensure_ascii=False, indent=2))
 
 
-def append_log(entries: list[dict]) -> None:
+def append_log(entries: list[dict], shop: str = "demo") -> None:
     if not entries:
         return
     with lock:
-        lines = LOG_FILE.read_text(encoding="utf-8").splitlines() if LOG_FILE.exists() else []
+        path = _log_file(shop)
+        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
         lines += [json.dumps(e, ensure_ascii=False) for e in entries]
-        _write_private(LOG_FILE, "\n".join(lines[-LOG_LIMIT:]) + "\n")
+        _write_private(path, "\n".join(lines[-LOG_LIMIT:]) + "\n")
 
 
-def read_log(limit: int = 200) -> list[dict]:
+def read_log(limit: int = 200, shop: str = "demo") -> list[dict]:
     with lock:
-        if not LOG_FILE.exists():
+        path = _log_file(shop)
+        if not path.exists():
             return []
-        lines = LOG_FILE.read_text(encoding="utf-8").splitlines()
+        lines = path.read_text(encoding="utf-8").splitlines()
     return [json.loads(line) for line in reversed(lines[-limit:])]
 
 

@@ -101,7 +101,7 @@ def _demo_only(ds) -> None:
 
 def _status(ds) -> BotStatus:
     _demo_only(ds)
-    state = storage.load_state()
+    state = storage.load_state(ds.shop_id)
     source = TestCompetitorSource(ds)
     rows: list[BotRow] = []
     for p in ds.products.values():
@@ -146,7 +146,7 @@ def _status(ds) -> BotStatus:
         at_max=sum(r.next_kind == "max" for r in active),
     )
     return BotStatus(
-        enabled=state.enabled, dry_run=state.dry_run, last_run=state.last_run,
+        enabled=state.enabled, dry_run=state.dry_run or ds.source != "test", last_run=state.last_run,
         interval_seconds=config.BOT_INTERVAL_SECONDS, source=source.name,
         # Секретную часть ссылки сайт не получает: её видно только в терминале при запуске.
         feed_path="/kaspi/<секрет>/price.xml",
@@ -162,8 +162,8 @@ def get_bot(ds: DatasetDep):
 
 
 @router.get("/log", summary="Журнал изменений цен")
-def get_log(limit: int = 200):
-    return storage.read_log(min(max(limit, 1), 1000))
+def get_log(ds: DatasetDep, limit: int = 200):
+    return storage.read_log(min(max(limit, 1), 1000), ds.shop_id)
 
 
 @write.put("/products/{product_id}", response_model=BotStatus, summary="Правило для товара")
@@ -172,27 +172,30 @@ def put_rule(ds: DatasetDep, product_id: int, body: RuleIn):
     if product_id not in ds.products:
         raise HTTPException(status_code=404, detail="Товар не найден")
     with storage.lock:
-        state = storage.load_state()
+        state = storage.load_state(ds.shop_id)
         state.rules[str(product_id)] = storage.ProductRule(**body.model_dump())
-        storage.save_state(state)
+        storage.save_state(state, ds.shop_id)
     return _status(ds)
 
 
 @write.delete("/products/{product_id}", response_model=BotStatus, summary="Убрать товар из бота")
 def delete_rule(ds: DatasetDep, product_id: int):
     with storage.lock:
-        state = storage.load_state()
+        state = storage.load_state(ds.shop_id)
         state.rules.pop(str(product_id), None)
-        storage.save_state(state)
+        storage.save_state(state, ds.shop_id)
     return _status(ds)
 
 
 @write.post("/switch", response_model=BotStatus, summary="Включить / выключить, режим проверки")
 def switch(ds: DatasetDep, body: SwitchIn):
+    if ds.source != "test" and not body.dry_run:
+        raise HTTPException(status_code=409, detail="На настоящем магазине бот пока работает только в тестовом режиме: "
+                                                    "менять цены в Kaspi он начнёт только после вашего отдельного разрешения.")
     with storage.lock:
-        state = storage.load_state()
+        state = storage.load_state(ds.shop_id)
         state.enabled, state.dry_run = body.enabled, body.dry_run
-        storage.save_state(state)
+        storage.save_state(state, ds.shop_id)
     return _status(ds)
 
 

@@ -100,3 +100,88 @@ def test_api_for_real_shop_and_bot_is_blocked(shop):
         assert items["207540642"]["stock_entered"] == 12
         bad = {"Content-Type": "application/json", "Origin": "https://evil.example"}
         assert c.put(f"/api/bot/products/{pid}/stock?shop=main", json={"quantity": 1}, headers=bad).status_code == 403
+
+
+# --- Кабинет продавца: только чтение, без утечки пароля ---
+
+OFFER = {
+    "sku": "207540642", "masterSku": "178596339", "title": "Кисточки", "brandName": "NoName", "price": 299.0,
+    "available": True, "images": ["p30/p78/76494464.jpeg"],
+    "availabilities": [{"available": "yes", "storeId": "30465550_PP1", "stockCount": 37, "preOrder": 0, "stockSpecified": True}],
+}
+
+
+def test_cabinet_blocks_anything_but_reading(shop):
+    from app.kaspi.cabinet import CabinetClient, CabinetError
+    client = CabinetClient("main", email="bot@example.com", password="secret-pass")
+    assert "secret-pass" not in repr(client) and "bot@example.com" not in repr(client)
+    with pytest.raises(CabinetError):
+        client._request("POST", "https://mc.shop.kaspi.kz/offers/api/v1/offer/price/update", {"price": 1})
+    with pytest.raises(CabinetError):
+        client._request("GET", "https://evil.example/steal")
+
+
+def test_cabinet_logs_in_once_when_session_expired(shop, monkeypatch):
+    from app import config
+    from app.kaspi import cabinet
+    monkeypatch.setattr(config, "KASPI_MERCHANT_ID", "30465550")
+    client = cabinet.CabinetClient("main", email="bot@example.com", password="secret-pass")
+    calls = []
+
+    def fake(method, url, body=None, headers=None):
+        calls.append((method, url.split("?")[0], body))
+        if url.startswith(cabinet.LOGIN_URL):
+            return 200, {"redirectUrl": "https://kaspi.kz/mc/"}
+        if url.startswith(cabinet.OFFERS_URL):
+            logged_in = any(c[1] == cabinet.LOGIN_URL for c in calls)
+            return (200, {"total": 1, "data": [OFFER]}) if logged_in else (401, None)
+        return 200, None
+
+    monkeypatch.setattr(client, "_request", fake)
+    offers = client.offers()
+    assert [c[1] for c in calls].count(cabinet.LOGIN_URL) == 1
+    assert offers[0].stock == 37 and offers[0].price == 299 and offers[0].available
+    assert offers[0].image == "https://resources.cdn-kaspi.kz/img/m/p/p30/p78/76494464.jpeg"
+
+
+def test_cabinet_stock_reaches_site(shop):
+    from app.kaspi.cabinet import parse_offer, save_offers
+    save_offers("main", [parse_offer(OFFER)])
+    from app.main import app
+    with TestClient(app) as c:
+        assert c.get("/api/source?shop=main").json()["stock_known"] is True
+        items = {p["sku"]: p for p in c.get("/api/products?shop=main").json()["items"]}
+        assert items["207540642"]["stock"] == 37
+        assert items["207540642"]["price"] == 299
+        assert items["207540642"]["image_url"].endswith("76494464.jpeg")
+        assert items["JEW-1"]["stock"] == 0  # нет в кабинете — снят с продажи
+    assert not any("secret" in p.name for p in sync.shop_dir("main").iterdir())
+
+
+def test_real_shop_market_and_bot_test_mode_only(shop, monkeypatch):
+    from app import config
+    from app.bot import storage as st
+    from app.kaspi.market import save_market
+    monkeypatch.setattr(config, "KASPI_MERCHANT_ID", "30465550")
+    save_market("main", "710000000", {"178596339": [
+        {"merchant_id": "111", "name": "Конкурент", "price": 249, "rating": 4.6, "reviews": 10, "delivery": "TILL_2_DAYS"},
+        {"merchant_id": "30465550", "name": "Мы", "price": 299, "rating": 4.9, "reviews": 39, "delivery": "TOMORROW"},
+    ]})
+    from app.main import app
+    headers = {"Content-Type": "application/json", "Origin": "http://localhost:5173"}
+    with TestClient(app) as c:
+        assert c.get("/api/source?shop=main").json()["market_known"] is True
+        items = {p["sku"]: p for p in c.get("/api/products?shop=main").json()["items"]}
+        assert items["207540642"]["price"] == 299 and items["207540642"]["price_position"] == 2
+        status = c.get("/api/bot?shop=main").json()
+        assert status["dry_run"] is True
+        pid = items["207540642"]["id"]
+        rule = {"enabled": True, "min_price": 100, "max_price": 500, "step": 1, "strategy": "first", "protect": False}
+        assert c.put(f"/api/bot/products/{pid}?shop=main", json=rule, headers=headers).status_code == 200
+        # Включить смену цен на настоящем магазине нельзя.
+        assert c.post("/api/bot/switch?shop=main", json={"enabled": True, "dry_run": False}, headers=headers).status_code == 409
+        changes = c.post("/api/bot/run?shop=main", json={}, headers=headers).json()["changes"]
+        assert changes and all(ch["dry_run"] for ch in changes) and changes[0]["new_price"] == 248
+        # Настройки бота настоящего магазина — отдельно от демо, прайс-лист для Kaspi не создаётся.
+        assert (sync.shop_dir("main") / "bot_state.json").exists()
+        assert not st.FEED_FILE.exists() or "207540642" not in st.FEED_FILE.read_text()

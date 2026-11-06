@@ -16,7 +16,11 @@ def _load_env(path: Path) -> None:
         line = line.strip()
         if line and not line.startswith("#") and "=" in line:
             key, value = line.split("=", 1)
-            os.environ.setdefault(key.strip(), value.strip())
+            key, value = key.strip(), value.strip()
+            # Непустое значение важнее пустого (строка могла встретиться в файле дважды).
+            if value or key not in os.environ:
+                if value or not os.environ.get(key):
+                    os.environ[key] = value
 
 
 _load_env(Path(__file__).resolve().parent.parent / ".env")
@@ -29,8 +33,14 @@ KASPI_API_URL = "https://kaspi.kz/shop/api/v2"
 #   KASPI_COMPANY — название магазина, KASPI_MERCHANT_ID — ID продавца,
 #   KASPI_STORE_ID — код склада («Склады и магазины» в кабинете).
 KASPI_COMPANY = os.environ.get("KASPI_COMPANY", "").strip() or "Мой магазин"
-KASPI_MERCHANT_ID = os.environ.get("KASPI_MERCHANT_ID", "")
+KASPI_MERCHANT_ID = os.environ.get("KASPI_MERCHANT_ID", "").strip()
+
+# Пользователь кабинета продавца («Аналитика Бот») — только в backend/.env.
+KASPI_CABINET_EMAIL = os.environ.get("KASPI_CABINET_EMAIL", "").strip()
+KASPI_CABINET_PASSWORD = os.environ.get("KASPI_CABINET_PASSWORD", "").strip()
 KASPI_STORE_ID = os.environ.get("KASPI_STORE_ID", "").strip() or "PP1"
+# Город, для которого смотрим цены конкурентов (код Kaspi). 710000000 — Астана.
+KASPI_CITY_ID = os.environ.get("KASPI_CITY_ID", "").strip() or "710000000"
 KASPI_DEFAULT_BRAND = os.environ.get("KASPI_DEFAULT_BRAND", "").strip() or "NoName"
 
 # Бот цен: как часто пересчитывать цены. Kaspi забирает прайс-лист раз в 60 минут,
