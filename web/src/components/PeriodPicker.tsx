@@ -1,10 +1,12 @@
 import { useSettings } from '../api/client'
 import { shiftDate, usePeriod } from '../lib/period'
 
-const PRESETS = [
+const PRESETS: { days: number | 'all'; label: string }[] = [
   { days: 7, label: '7 дней' },
   { days: 30, label: '30 дней' },
   { days: 90, label: '90 дней' },
+  { days: 365, label: 'Год' },
+  { days: 'all', label: 'Всё время' },
 ]
 
 export function PeriodPicker() {
@@ -15,17 +17,18 @@ export function PeriodPicker() {
   const { start: min, end: max } = settings.data_period
   const end = to ?? max
   const start = from ?? shiftDate(end, -6)
-  const activeDays = !to || to === max ? PRESETS.find((p) => shiftDate(max, -(p.days - 1)) === start)?.days : undefined
+  const presetStart = (days: number | 'all') => (days === 'all' ? min : shiftDate(max, -(days - 1)))
+  const activeDays = !to || to === max ? PRESETS.find((p) => presetStart(p.days) === start)?.days : undefined
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="flex rounded-xl border border-line bg-surface p-1 shadow-sm">
+      <div className="flex flex-wrap rounded-xl border border-line bg-surface p-1 shadow-sm">
         {PRESETS.map((preset) => (
           <button
             key={preset.days}
             type="button"
-            onClick={() => setPeriod(preset.days === 7 ? {} : { from: shiftDate(max, -(preset.days - 1)) })}
-            className={`rounded-lg px-3 py-1.5 text-sm ${
+            onClick={() => setPeriod(preset.days === 7 ? {} : { from: presetStart(preset.days) })}
+            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm ${
               activeDays === preset.days ? 'bg-ink font-medium text-page' : 'text-ink-2 hover:bg-hover'
             }`}
           >

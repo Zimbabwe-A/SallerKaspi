@@ -51,7 +51,11 @@ def build(shop_id: str, name: str) -> Dataset:
     costs = load_costs(shop_id)
     end = date.today()
     days = int(cache.get("days") or 90)
-    start = min(min(_day(o["created"]) for o in orders_raw), end - timedelta(days=days - 1))
+    # Начало истории магазина: «since» в кэше (например, дата открытия), иначе — последние days дней.
+    if cache.get("since"):
+        start = min(date.fromisoformat(cache["since"]), min(_day(o["created"]) for o in orders_raw))
+    else:
+        start = min(min(_day(o["created"]) for o in orders_raw), end - timedelta(days=days - 1))
 
     categories: dict[str, Category] = {}
     products: dict[int, Product] = {}

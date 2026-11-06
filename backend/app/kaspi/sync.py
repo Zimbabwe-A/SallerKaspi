@@ -37,8 +37,20 @@ def load_cache(shop_id: str) -> dict:
 
 
 def save_cache(shop_id: str, cache: dict) -> None:
-    shop_dir(shop_id).mkdir(mode=0o700, parents=True, exist_ok=True)
-    _write_private(cache_file(shop_id), json.dumps(cache, ensure_ascii=False))
+    """Сохранить кэш, не затирая то, что параллельно дописала другая загрузка (история + автообновление)."""
+    from app.bot.storage import lock
+    with lock:
+        shop_dir(shop_id).mkdir(mode=0o700, parents=True, exist_ok=True)
+        current = load_cache(shop_id)
+        for oid, order in current.get("orders", {}).items():
+            mine = cache["orders"].get(oid)
+            if mine is None or (mine.get("entries") is None and order.get("entries") is not None):
+                cache["orders"][oid] = order
+        for mid, product in current.get("products", {}).items():
+            cache["products"].setdefault(mid, product)
+        cache["days"] = max(int(cache.get("days") or 0), int(current.get("days") or 0))
+        cache.setdefault("since", current.get("since"))
+        _write_private(cache_file(shop_id), json.dumps(cache, ensure_ascii=False))
 
 
 def clean_order(item: dict) -> dict:
