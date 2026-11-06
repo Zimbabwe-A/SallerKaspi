@@ -310,7 +310,14 @@ function RuleRow({ row, index }: { row: BotRow; index: number }) {
         <p className="font-medium">{money(row.price)}</p>
         <p className="text-xs text-muted">{row.position}-е место</p>
         <p className="text-xs text-muted">дешевле всех: {row.min_competitor ? money(row.min_competitor) : '—'}</p>
-        <p className="text-xs text-ink-2">на складе: <b>{row.stock !== null ? `${row.stock} шт` : 'нет данных'}</b></p>
+      </td>
+      <td className="whitespace-nowrap px-3 py-3 text-right">
+        {row.stock !== null ? (
+          <span className={`text-base font-bold ${row.stock === 0 ? 'text-critical' : ''}`}>{row.stock} шт</span>
+        ) : (
+          <span className="text-xs text-muted">нет данных</span>
+        )}
+        {row.stock === 0 && <p className="text-xs text-critical">закончился</p>}
       </td>
       <td className="px-3 py-3"><CostCell row={row} /></td>
       <td className="px-3 py-3">
@@ -394,7 +401,7 @@ function Log() {
   )
 }
 
-type SortKey = 'sales' | 'price' | 'cost'
+type SortKey = 'sales' | 'price' | 'cost' | 'stock'
 
 function Th({ title, hint, right, sortKey, sort, onSort }: {
   title: string
@@ -447,7 +454,8 @@ function BotScreen() {
   if (error) return <ErrorBox error={error} />
   if (!data) return <Loading />
 
-  const value = (r: BotRow) => (sort.key === 'sales' ? r.units_30d : sort.key === 'price' ? r.price : r.cost)
+  const value = (r: BotRow) =>
+    sort.key === 'sales' ? r.units_30d : sort.key === 'price' ? r.price : sort.key === 'stock' ? r.stock : r.cost
   const rows = data.rows
     .filter((r) => (filter === 'bot' ? r.rule : filter === 'not_first' ? r.next_position !== null && r.next_position !== 1 : true))
     .sort((a, b) => {
@@ -505,6 +513,7 @@ function BotScreen() {
                 <th className="py-3 pl-4 pr-1 text-right align-bottom font-medium">№</th>
                 <Th title="Товар" />
                 <Th title="Ваша цена" hint="и место сейчас" right sortKey="price" sort={sort} onSort={onSort} />
+                <Th title="На складе" hint="из кабинета Kaspi" right sortKey="stock" sort={sort} onSort={onSort} />
                 <Th title="Закупка, ₸" hint="со страницы «Закупочные цены»" sortKey="cost" sort={sort} onSort={onSort} />
                 <Th title="Минимум, ₸" hint="ниже не опустится" />
                 <Th title="Максимум, ₸" hint="выше не поднимет" />
