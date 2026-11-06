@@ -368,10 +368,26 @@ function Log() {
   )
 }
 
-function Th({ title, hint, right }: { title: string; hint?: string; right?: boolean }) {
+type SortKey = 'price' | 'cost'
+
+function Th({ title, hint, right, sortKey, sort, onSort }: {
+  title: string
+  hint?: string
+  right?: boolean
+  sortKey?: SortKey
+  sort?: { key: SortKey; order: 'desc' | 'asc' }
+  onSort?: (key: SortKey) => void
+}) {
+  const active = sortKey && sort?.key === sortKey
   return (
     <th className={`px-3 py-3 align-bottom font-medium ${right ? 'text-right' : ''}`}>
-      <span className="block whitespace-nowrap text-ink-2">{title}</span>
+      {sortKey && onSort ? (
+        <button type="button" onClick={() => onSort(sortKey)} className={`block whitespace-nowrap text-ink-2 hover:text-ink ${right ? 'ml-auto' : ''}`} title="Сортировать">
+          {title} {active ? (sort!.order === 'desc' ? '↓' : '↑') : '↕'}
+        </button>
+      ) : (
+        <span className="block whitespace-nowrap text-ink-2">{title}</span>
+      )}
       {hint && <span className="block font-normal">{hint}</span>}
     </th>
   )
@@ -397,13 +413,24 @@ export function BotPage() {
 function BotScreen() {
   const { data, error } = useBot()
   const [filter, setFilter] = useState<Filter>('all')
+  // По умолчанию — от дорогих к дешёвым. Нажатие на заголовок меняет порядок.
+  const [sort, setSort] = useState<{ key: SortKey; order: 'desc' | 'asc' }>({ key: 'price', order: 'desc' })
+  const onSort = (key: SortKey) =>
+    setSort((s) => (s.key === key ? { key, order: s.order === 'desc' ? 'asc' : 'desc' } : { key, order: 'desc' }))
 
   if (error) return <ErrorBox error={error} />
   if (!data) return <Loading />
 
-  const rows = data.rows.filter((r) =>
-    filter === 'bot' ? r.rule : filter === 'not_first' ? r.next_position !== null && r.next_position !== 1 : true,
-  )
+  const value = (r: BotRow) => (sort.key === 'price' ? r.price : r.cost)
+  const rows = data.rows
+    .filter((r) => (filter === 'bot' ? r.rule : filter === 'not_first' ? r.next_position !== null && r.next_position !== 1 : true))
+    .sort((a, b) => {
+      const va = value(a), vb = value(b)
+      if (va === null && vb === null) return 0
+      if (va === null) return 1 // без закупки — в конец
+      if (vb === null) return -1
+      return sort.order === 'desc' ? vb - va : va - vb
+    })
 
   return (
     <>
@@ -436,8 +463,8 @@ function BotScreen() {
               <tr>
                 <th className="py-3 pl-4 pr-1 text-right align-bottom font-medium">№</th>
                 <Th title="Товар" />
-                <Th title="Ваша цена" hint="и место сейчас" right />
-                <Th title="Закупка, ₸" hint="хранится у вас" />
+                <Th title="Ваша цена" hint="и место сейчас" right sortKey="price" sort={sort} onSort={onSort} />
+                <Th title="Закупка, ₸" hint="хранится у вас" sortKey="cost" sort={sort} onSort={onSort} />
                 <Th title="Минимум, ₸" hint="ниже не опустится" />
                 <Th title="Максимум, ₸" hint="выше не поднимет" />
                 <Th title="Цель" hint="какое место держать" />
