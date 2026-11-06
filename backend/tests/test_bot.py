@@ -251,3 +251,13 @@ def test_waybills_reject_foreign_site_and_non_pdf(client):
     notpdf = client.post("/api/waybills/merge", files=[("files", ("x.txt", b"hello", "text/plain"))],
                          headers={"Origin": "http://localhost:5173"})
     assert notpdf.status_code == 400 and "не PDF" in notpdf.json()["detail"]
+
+
+def test_waybill_layouts_count_pages():
+    import io
+    from pypdf import PdfReader
+    from app.waybills import merge
+    files = [_a4_waybill() for _ in range(9)]
+    for layout, pages in [("a4x1", 9), ("a4x4", 3), ("a4x8", 2), ("a4x9", 1), ("75x120", 9), ("100x150", 9), ("join", 9)]:
+        pdf, count = merge(files, layout)
+        assert count == 9 and len(PdfReader(io.BytesIO(pdf)).pages) == pages, layout

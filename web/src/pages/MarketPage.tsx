@@ -33,7 +33,7 @@ export function MarketPage() {
   if (source.data && !source.data.market_known) {
     return (
       <>
-        <PageTitle>Рынок</PageTitle>
+        <PageTitle>Аналитика рынка</PageTitle>
         <Notice title="Цены конкурентов ещё не подключены">
           Kaspi API отдаёт только ваши заказы — цен других продавцов в нём нет. Их нужно брать со страниц ваших
           товаров на kaspi.kz. Это следующий шаг: после него здесь появятся конкуренты, а бот цен заработает на
@@ -47,7 +47,7 @@ export function MarketPage() {
 
   return (
     <>
-      <PageTitle subtitle="Ваши цены против конкурентов на тех же карточках — по состоянию на сегодня">Рынок</PageTitle>
+      <PageTitle subtitle="Ваши цены против конкурентов на тех же карточках — по состоянию на сегодня">Аналитика рынка</PageTitle>
 
       {categories.error && <ErrorBox error={categories.error} />}
 

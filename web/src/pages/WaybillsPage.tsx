@@ -1,9 +1,19 @@
 import { useRef, useState } from 'react'
 import { Card, PageTitle } from '../components/ui'
 
-const SIZES = [
-  { id: '75x120', label: '75 × 120 мм', hint: 'стандарт Kaspi' },
-  { id: '100x150', label: '100 × 150 мм', hint: 'крупная этикетка' },
+// Варианты печати: три ряда, как в привычных ботах для накладных.
+const LAYOUTS = [
+  [
+    { id: 'a4x4', label: '4 на A4' },
+    { id: 'a4x8', label: '8 на A4' },
+    { id: 'a4x9', label: '9 на A4' },
+    { id: 'a4x1', label: '1 на A4' },
+  ],
+  [
+    { id: '75x120', label: 'Термопринтер 75/120' },
+    { id: '100x150', label: 'Термопринтер 100/150' },
+  ],
+  [{ id: 'join', label: 'Просто объединить' }],
 ]
 
 const kb = (n: number) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} МБ` : `${Math.max(1, Math.round(n / 1024))} КБ`)
@@ -115,26 +125,32 @@ export function WaybillsPage() {
             ))}
           </ul>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4">
-            <span className="text-sm text-ink-2">Размер наклейки:</span>
-            <div className="flex gap-1 rounded-xl bg-hover p-1 text-sm">
-              {SIZES.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => setSize(s.id)}
-                  className={`rounded-lg px-3 py-1 ${size === s.id ? 'bg-surface font-semibold shadow-sm' : 'text-ink-2'}`}
-                  title={s.hint}
-                >
-                  {s.label}
-                </button>
+          <div className="mt-4 flex flex-col gap-3 border-t border-line pt-4">
+            <span className="text-sm font-semibold text-ink-2">Как печатать:</span>
+            <div className="grid gap-2">
+              {LAYOUTS.map((row, i) => (
+                <div key={i} className={`grid gap-2 ${row.length === 4 ? 'grid-cols-2 sm:grid-cols-4' : row.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  {row.map((l) => (
+                    <button
+                      key={l.id}
+                      type="button"
+                      onClick={() => setSize(l.id)}
+                      aria-pressed={size === l.id}
+                      className={`h-12 rounded-xl border text-sm font-semibold transition ${
+                        size === l.id ? 'cta-gradient border-transparent text-white' : 'border-line bg-hover text-ink hover:border-[var(--cta)]'
+                      }`}
+                    >
+                      {l.label}
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
             <button
               type="button"
               disabled={busy}
               onClick={build}
-              className="cta-gradient ml-auto inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold text-white disabled:opacity-50"
+              className="cta-gradient mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-base font-bold text-white disabled:opacity-50"
             >
               <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" />
@@ -149,7 +165,7 @@ export function WaybillsPage() {
       {result && (
         <Card>
           <p className="text-sm">
-            Готово: <b>{result.count}</b> наклеек в одном файле.{' '}
+            Готово: <b>{result.count}</b> {size === 'join' ? 'страниц' : 'наклеек'} в одном файле.{' '}
             <a href={result.url} target="_blank" rel="noopener" className="font-semibold text-accent hover:underline">Открыть PDF</a>
             {' · '}
             <a href={result.url} download={`nakladnye_${result.count}.pdf`} className="font-semibold text-accent hover:underline">Скачать</a>

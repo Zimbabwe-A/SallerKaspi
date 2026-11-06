@@ -16,7 +16,7 @@ const ICONS: Record<string, string> = {
 const NAV = [
   { to: '/', label: 'Аналитика магазина', end: true },
   { to: '/products', label: 'Товары', end: false },
-  { to: '/market', label: 'Рынок', end: false },
+  { to: '/market', label: 'Аналитика рынка', end: false },
   { to: '/bot', label: 'Бот цен', end: false },
   { to: '/waybills', label: 'Накладные', end: false },
 ]
