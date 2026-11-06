@@ -4,7 +4,9 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { Layout } from './components/Layout'
 import './index.css'
+import { CalculatorPage } from './pages/CalculatorPage'
 import { MarketPage } from './pages/MarketPage'
+import { NichesPage } from './pages/NichesPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { ProductPage } from './pages/ProductPage'
 import { ProductsPage } from './pages/ProductsPage'
@@ -25,6 +27,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="products/:id" element={<ProductPage />} />
             <Route path="market" element={<MarketPage />} />
             <Route path="stock" element={<StockPage />} />
+            <Route path="calculator" element={<CalculatorPage />} />
+            <Route path="niches" element={<NichesPage />} />
           </Route>
         </Routes>
       </BrowserRouter>

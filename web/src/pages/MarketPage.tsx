@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { useAlerts, useMarketCategories } from '../api/client'
 import type { AlertSeverity } from '../api/types'
-import { Card, ErrorBox, PageTitle, SeverityBadge } from '../components/ui'
+import { Card, DemoNotice, ErrorBox, PageTitle, SeverityBadge } from '../components/ui'
 import { dec, money, pct, shortDate } from '../lib/format'
 import { usePeriodSearch } from '../lib/period'
 
@@ -33,7 +33,8 @@ export function MarketPage() {
 
   return (
     <>
-      <PageTitle subtitle="Ваши цены против конкурентов на тех же карточках — по состоянию на сегодня">Рынок</PageTitle>
+      <PageTitle subtitle="Ваши цены против конкурентов на тех же карточках">Рынок</PageTitle>
+      <DemoNotice />
 
       {categories.error && <ErrorBox error={categories.error} />}
 

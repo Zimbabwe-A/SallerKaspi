@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Period(BaseModel):
@@ -197,3 +197,79 @@ class Settings(BaseModel):
     categories: list[Category]
     delivery_tiers: list[DeliveryTier]
     data_period: Period
+
+
+DeliveryType = Literal["city", "kazakhstan", "express"]
+WeightTier = Literal["to_5", "to_15", "to_30", "to_60", "to_100", "over_100"]
+
+
+class EconomicsInput(BaseModel):
+    purchase_cost: int = Field(ge=0)  # закупка за 1 шт
+    other_cost: int = Field(default=0, ge=0)  # упаковка, доставка до склада и прочее за 1 шт
+    price: int = Field(gt=0)
+    commission_pct: float = Field(default=12.5, ge=0, le=50)  # с НДС
+    delivery_type: DeliveryType = "city"
+    weight: WeightTier = "to_5"
+    tax_pct: float = Field(default=4, ge=0, le=50)
+    target_margin_pct: float = Field(default=15, ge=0, le=90)
+
+
+class Economics(BaseModel):
+    price: int
+    commission: int
+    delivery: int
+    tax: int
+    cost: int
+    profit: int
+    margin_pct: float
+    roi_pct: float | None
+    break_even_price: int | None
+    target_price: int | None
+
+
+class CandidateInput(EconomicsInput):
+    name: str = Field(min_length=1, max_length=200)
+    url: str | None = Field(default=None, max_length=500)
+    sellers: int = Field(default=1, ge=1)
+    reviews: int = Field(default=0, ge=0)
+    min_price: int | None = Field(default=None, gt=0)  # самая низкая цена на карточке
+    notes: str = Field(default="", max_length=1000)
+
+
+class ScoreParts(BaseModel):
+    margin: int
+    demand: int
+    competition: int
+
+
+class Candidate(CandidateInput):
+    id: int
+    updated_at: date
+    economics: Economics
+    score: int  # 0–100
+    score_parts: ScoreParts
+    verdict: Literal["good", "check", "reject"]
+    profit_at_min_price: int | None
+    warnings: list[str]
+
+
+class CommissionPreset(BaseModel):
+    id: str
+    label: str
+    pct: float
+
+
+class Option(BaseModel):
+    id: str
+    label: str
+
+
+class Tariffs(BaseModel):
+    commission_presets: list[CommissionPreset]
+    delivery_types: list[Option]
+    weight_tiers: list[Option]
+    default_tax_pct: float
+    default_target_margin_pct: float
+    commission_source: str
+    delivery_source: str
+    checked_at: date

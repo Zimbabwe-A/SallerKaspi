@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app import config
 from app.data.store import get_dataset
-from app.routers import internal, market
+from app.routers import internal, market, niches
 
 
 @asynccontextmanager
@@ -30,6 +30,7 @@ app.add_middleware(
 
 app.include_router(internal.router, prefix="/api")
 app.include_router(market.router, prefix="/api")
+app.include_router(niches.router, prefix="/api")
 
 
 @app.get("/api/health", tags=["Служебное"])

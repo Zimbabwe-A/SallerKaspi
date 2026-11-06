@@ -193,3 +193,63 @@ export interface Settings {
 }
 
 export type ProductSort = 'revenue' | 'profit' | 'units' | 'margin_pct' | 'stock' | 'days_of_cover' | 'name'
+
+export type DeliveryType = 'city' | 'kazakhstan' | 'express'
+export type WeightTier = 'to_5' | 'to_15' | 'to_30' | 'to_60' | 'to_100' | 'over_100'
+
+export interface EconomicsInput {
+  purchase_cost: number
+  other_cost: number
+  price: number
+  commission_pct: number
+  delivery_type: DeliveryType
+  weight: WeightTier
+  tax_pct: number
+  target_margin_pct: number
+}
+
+export interface Economics {
+  price: number
+  commission: number
+  delivery: number
+  tax: number
+  cost: number
+  profit: number
+  margin_pct: number
+  roi_pct: number | null
+  break_even_price: number | null
+  target_price: number | null
+}
+
+export interface CandidateInput extends EconomicsInput {
+  name: string
+  url: string | null
+  sellers: number
+  reviews: number
+  min_price: number | null
+  notes: string
+}
+
+export type Verdict = 'good' | 'check' | 'reject'
+
+export interface Candidate extends CandidateInput {
+  id: number
+  updated_at: string
+  economics: Economics
+  score: number
+  score_parts: { margin: number; demand: number; competition: number }
+  verdict: Verdict
+  profit_at_min_price: number | null
+  warnings: string[]
+}
+
+export interface Tariffs {
+  commission_presets: { id: string; label: string; pct: number }[]
+  delivery_types: { id: DeliveryType; label: string }[]
+  weight_tiers: { id: WeightTier; label: string }[]
+  default_tax_pct: number
+  default_target_margin_pct: number
+  commission_source: string
+  delivery_source: string
+  checked_at: string
+}

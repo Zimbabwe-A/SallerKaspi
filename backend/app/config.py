@@ -5,6 +5,8 @@
 и вашим налоговым режимом.
 """
 
+from pathlib import Path
+
 SEED = 42
 HISTORY_DAYS = 180
 CURRENCY = "KZT"
@@ -51,3 +53,6 @@ COMPETITOR_NAMES = [
 
 # Окно для расчёта средней скорости продаж (остатки, «дней до нуля»).
 SALES_VELOCITY_DAYS = 14
+
+# Файл с данными, которые вводит пользователь (кандидаты в подборе ниш).
+DB_PATH = Path(__file__).resolve().parents[1] / "storage" / "app.db"
