@@ -262,7 +262,7 @@ function CostCell({ row }: { row: BotRow }) {
       {row.break_even !== null ? (
         <span className="text-xs text-muted">без убытка от {money(row.break_even)}</span>
       ) : (
-        <span className="max-w-28 text-xs text-muted">укажите — бот не уйдёт в минус</span>
+        <span className="max-w-28 text-xs text-muted">впишите — бот не уйдёт в минус</span>
       )}
       {save.error && <span className="max-w-28 text-xs text-critical">{save.error.message}</span>}
     </div>
@@ -303,6 +303,7 @@ function RuleRow({ row, index }: { row: BotRow; index: number }) {
         <p className="font-medium">{money(row.price)}</p>
         <p className="text-xs text-muted">{row.position}-е место</p>
         <p className="text-xs text-muted">дешевле всех: {row.min_competitor ? money(row.min_competitor) : '—'}</p>
+        <p className="text-xs text-ink-2">на складе: <b>{row.stock !== null ? `${row.stock} шт` : 'нет данных'}</b></p>
       </td>
       <td className="px-3 py-3"><CostCell row={row} /></td>
       <td className="px-3 py-3">
@@ -497,7 +498,7 @@ function BotScreen() {
                 <th className="py-3 pl-4 pr-1 text-right align-bottom font-medium">№</th>
                 <Th title="Товар" />
                 <Th title="Ваша цена" hint="и место сейчас" right sortKey="price" sort={sort} onSort={onSort} />
-                <Th title="Закупка, ₸" hint="хранится у вас" sortKey="cost" sort={sort} onSort={onSort} />
+                <Th title="Закупка, ₸" hint="сколько вы платите поставщику" sortKey="cost" sort={sort} onSort={onSort} />
                 <Th title="Минимум, ₸" hint="ниже не опустится" />
                 <Th title="Максимум, ₸" hint="выше не поднимет" />
                 <Th title="Цель" hint="какое место держать" />

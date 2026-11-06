@@ -65,6 +65,7 @@ class BotRow(BaseModel):
     first_place_price: int | None  # какая цена нужна, чтобы быть 1-м
     first_place_profit: int | None  # прибыль с продажи по этой цене
     units_30d: int = 0  # продано штук за 30 дней — для сортировки «топ продаж»
+    stock: int | None = None  # остаток на складе (из кабинета Kaspi или вписанный вручную)
 
 
 class BotCounts(BaseModel):
@@ -143,6 +144,7 @@ def _status(ds) -> BotStatus:
             first_place_price=first_price if first_price and first_price > 0 else None,
             first_place_profit=profit(first_price) if first_price and first_price > 0 else None,
             units_30d=sold.get(p.id, 0),
+            stock=economics.stock_of(ds, p),
         ))
     active = [r for r in rows if r.next_position is not None]
     counts = BotCounts(

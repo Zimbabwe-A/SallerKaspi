@@ -243,6 +243,7 @@ export interface BotRow {
   first_place_price: number | null
   first_place_profit: number | null
   units_30d: number
+  stock: number | null
 }
 
 export interface BotCounts {
