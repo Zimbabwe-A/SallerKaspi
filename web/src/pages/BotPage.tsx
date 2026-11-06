@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { useBot, useBotLog, useBotRun, useBotSwitch, useSaveCost, useSaveRule, useSource } from '../api/client'
+import { Link } from 'react-router'
+import { useBot, useBotLog, useBotRun, useBotSwitch, useSaveRule, useSource } from '../api/client'
 import type { BotRow, BotRule, BotStatus } from '../api/types'
 import { Card, ErrorBox, Kpi, Loading, Notice, PageTitle } from '../components/ui'
 import { int, money } from '../lib/format'
+import { usePeriodSearch } from '../lib/period'
 
 const time = (iso: string) =>
   new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -236,35 +238,20 @@ const draftFor = (row: BotRow): BotRule =>
     protect: true,
   }
 
-/** Закупочная цена: сохраняется у вас, в Kaspi не отправляется. */
+/** Закупка — только показываем: берётся со страницы «Закупочные цены», вписывать здесь не нужно. */
 function CostCell({ row }: { row: BotRow }) {
-  const [value, setValue] = useState(row.cost !== null ? String(row.cost) : '')
-  const save = useSaveCost()
-  const saved = row.cost !== null ? String(row.cost) : ''
-  const commit = () => {
-    if (value === saved) return
-    save.mutate({ id: row.product_id, cost: value === '' ? null : Math.max(0, Number(value)) })
+  const search = usePeriodSearch()
+  if (row.cost === null) {
+    return (
+      <Link to={{ pathname: '/costs', search }} className="text-sm font-semibold text-accent hover:underline">
+        вписать →
+      </Link>
+    )
   }
   return (
-    <div className="flex flex-col gap-1">
-      <input
-        type="number"
-        inputMode="numeric"
-        min={0}
-        aria-label="Закупочная цена"
-        placeholder="не указана"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => e.key === 'Enter' && commit()}
-        className="tabular w-24 rounded-lg border border-line bg-surface px-2 py-1 text-right text-sm placeholder:text-muted"
-      />
-      {row.break_even !== null ? (
-        <span className="text-xs text-muted">без убытка от {money(row.break_even)}</span>
-      ) : (
-        <span className="max-w-28 text-xs text-muted">впишите — бот не уйдёт в минус</span>
-      )}
-      {save.error && <span className="max-w-28 text-xs text-critical">{save.error.message}</span>}
+    <div className="flex flex-col gap-0.5">
+      <span className="font-semibold">{money(row.cost)}</span>
+      {row.break_even !== null && <span className="text-xs text-muted">без убытка от {money(row.break_even)}</span>}
     </div>
   )
 }
@@ -498,7 +485,7 @@ function BotScreen() {
                 <th className="py-3 pl-4 pr-1 text-right align-bottom font-medium">№</th>
                 <Th title="Товар" />
                 <Th title="Ваша цена" hint="и место сейчас" right sortKey="price" sort={sort} onSort={onSort} />
-                <Th title="Закупка, ₸" hint="сколько вы платите поставщику" sortKey="cost" sort={sort} onSort={onSort} />
+                <Th title="Закупка, ₸" hint="со страницы «Закупочные цены»" sortKey="cost" sort={sort} onSort={onSort} />
                 <Th title="Минимум, ₸" hint="ниже не опустится" />
                 <Th title="Максимум, ₸" hint="выше не поднимет" />
                 <Th title="Цель" hint="какое место держать" />

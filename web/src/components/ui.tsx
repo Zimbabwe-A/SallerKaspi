@@ -130,9 +130,10 @@ export function AbcBadge({ abc }: { abc: 'A' | 'B' | 'C' | null }) {
 export function Notice({ title, children, accent = false }: { title: string; children: ReactNode; accent?: boolean }) {
   return (
     <div
-      className={`card rounded-2xl p-4 text-sm ${accent ? 'border-l-4 !border-l-[var(--cta)]' : ''}`}
+      className={`card relative overflow-hidden rounded-2xl p-4 text-sm ${accent ? 'pl-6' : ''}`}
       style={accent ? { background: 'linear-gradient(100deg, color-mix(in srgb, var(--cta) 10%, var(--surface)), var(--surface) 60%)' } : undefined}
     >
+      {accent && <span aria-hidden className="absolute inset-y-0 left-0 w-1.5 bg-cta" />}
       <p className="font-medium">{title}</p>
       <div className="mt-1 text-ink-2">{children}</div>
     </div>
