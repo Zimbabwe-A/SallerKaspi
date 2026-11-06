@@ -13,7 +13,7 @@ const BREAKDOWN_COLORS: Record<string, string> = {
   profit: 'var(--s6)',
 }
 
-export function BreakdownBar({ items, revenue }: { items: BreakdownItem[]; revenue: number }) {
+export function BreakdownBar({ items, revenue, narrow = false }: { items: BreakdownItem[]; revenue: number; narrow?: boolean }) {
   const [hovered, setHovered] = useState<string | null>(null)
   const visible = items.filter((i) => i.amount > 0)
   const active = items.find((i) => i.key === hovered)
@@ -45,7 +45,7 @@ export function BreakdownBar({ items, revenue }: { items: BreakdownItem[]; reven
           'Наведите на полосу, чтобы увидеть сумму'
         )}
       </p>
-      <ul className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+      <ul className={`mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-sm ${narrow ? '' : 'sm:grid-cols-2'}`}>
         {items.map((item) => (
           <li
             key={item.key}

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { AlertSeverity, StockStatus } from '../api/types'
+import type { AlertSeverity, StockStatus, Verdict } from '../api/types'
 import { signedPct } from '../lib/format'
 
 export function Card({ title, action, children, className = '' }: {
@@ -96,6 +96,30 @@ export function SeverityBadge({ severity }: { severity: AlertSeverity }) {
       <span aria-hidden>{s.icon}</span>
       {s.label}
     </span>
+  )
+}
+
+const VERDICT: Record<Verdict, { label: string; icon: string; className: string }> = {
+  good: { label: 'Подходит', icon: '✓', className: 'bg-good/10 text-good' },
+  check: { label: 'Проверить', icon: '▲', className: 'bg-warning/20 text-ink-2' },
+  reject: { label: 'Не подходит', icon: '✕', className: 'bg-critical/10 text-critical' },
+}
+
+export function VerdictBadge({ verdict }: { verdict: Verdict }) {
+  const v = VERDICT[verdict]
+  return (
+    <span className={`inline-flex h-fit shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${v.className}`}>
+      <span aria-hidden>{v.icon}</span>
+      {v.label}
+    </span>
+  )
+}
+
+export function DemoNotice() {
+  return (
+    <p className="rounded-xl border border-line bg-warning/15 px-3 py-2 text-sm text-ink-2">
+      ▲ Демо: магазин, конкуренты и цены на этой странице вымышленные. Решения по ним принимать нельзя.
+    </p>
   )
 }
 

@@ -1,9 +1,14 @@
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router'
+import { NavLink, Outlet, useLocation } from 'react-router'
 import { usePeriodSearch } from '../lib/period'
 import { PeriodPicker } from './PeriodPicker'
 
-const NAV = [
+const TOOLS = [
+  { to: '/niches', label: 'Подбор ниш', end: false },
+  { to: '/calculator', label: 'Калькулятор', end: false },
+]
+
+const DEMO = [
   { to: '/', label: 'Обзор', end: true },
   { to: '/products', label: 'Товары', end: false },
   { to: '/market', label: 'Рынок', end: false },
@@ -27,8 +32,10 @@ function Logo() {
 export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const search = usePeriodSearch()
+  const { pathname } = useLocation()
+  const isTool = TOOLS.some((item) => pathname.startsWith(item.to))
 
-  const links = NAV.map((item) => (
+  const toLink = (item: (typeof DEMO)[number]) => (
     <NavLink
       key={item.to}
       to={{ pathname: item.to, search }}
@@ -42,14 +49,21 @@ export function Layout() {
     >
       {item.label}
     </NavLink>
-  ))
+  )
+
+  const links = (
+    <>
+      {TOOLS.map(toLink)}
+      <p className="mt-3 px-3 pb-1 text-xs text-muted">Демо на тестовых данных</p>
+      {DEMO.map(toLink)}
+    </>
+  )
 
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[220px_1fr]">
       <aside className="sticky top-0 hidden h-dvh flex-col gap-6 border-r border-line p-4 md:flex">
         <Logo />
         <nav className="flex flex-col gap-1">{links}</nav>
-        <p className="mt-auto text-xs text-muted">Тестовые данные</p>
       </aside>
 
       <header className="sticky top-0 z-20 border-b border-line bg-page/90 px-4 py-3 backdrop-blur md:hidden">
@@ -69,7 +83,7 @@ export function Layout() {
 
       <main className="min-w-0 px-4 py-5 md:px-8 md:py-7">
         <div className="mx-auto flex max-w-6xl flex-col gap-5">
-          <PeriodPicker />
+          {!isTool && <PeriodPicker />}
           <Outlet />
         </div>
       </main>

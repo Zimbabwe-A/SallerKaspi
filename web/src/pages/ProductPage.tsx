@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router'
 import { useOffers, usePriceHistory, useProduct } from '../api/client'
 import type { UnitEconomics } from '../api/types'
 import { DailyLineChart } from '../components/charts'
-import { AbcBadge, Card, ErrorBox, Kpi, Loading, PageTitle, StockBadge } from '../components/ui'
+import { AbcBadge, Card, DemoNotice, ErrorBox, Kpi, Loading, PageTitle, StockBadge } from '../components/ui'
 import { dec, int, money, pct } from '../lib/format'
 import { usePeriodSearch } from '../lib/period'
 
@@ -85,6 +85,7 @@ export function ProductPage() {
       </div>
 
       <h2 className="mt-2 text-lg font-semibold">Рынок</h2>
+      <DemoNotice />
 
       <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
         <Card title="Цена на карточке: вы и конкуренты">
