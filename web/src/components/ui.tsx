@@ -12,7 +12,7 @@ export function Card({ title, action, children, className = '' }: {
     <section className={`card rounded-2xl p-4 md:p-5 ${className}`}>
       {(title || action) && (
         <div className="mb-4 flex items-center justify-between gap-3">
-          {title && <h2 className="font-semibold">{title}</h2>}
+          {title && <h2 className="text-lg font-bold">{title}</h2>}
           {action}
         </div>
       )}
@@ -24,7 +24,7 @@ export function Card({ title, action, children, className = '' }: {
 export function PageTitle({ children, subtitle }: { children: ReactNode; subtitle?: ReactNode }) {
   return (
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">{children}</h1>
+      <h1 className="text-3xl font-bold tracking-tight">{children}</h1>
       {subtitle && <p className="mt-1 text-sm text-ink-2">{subtitle}</p>}
     </div>
   )
@@ -75,7 +75,7 @@ export function Kpi({ label, value, tone, change, inverseChange, hint, icon, acc
           </span>
         )}
       </div>
-      <p className={`mt-1.5 text-xl font-semibold tracking-tight md:text-2xl ${color}`}>{value}</p>
+      <p className={`mt-1.5 text-2xl font-bold tracking-tight md:text-3xl ${color}`}>{value}</p>
       {(hint || change != null) && (
         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-muted">
           <Change value={change} inverse={inverseChange} />

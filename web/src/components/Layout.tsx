@@ -91,7 +91,7 @@ export function Layout() {
   ))
 
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[220px_1fr]">
+    <div className="min-h-dvh md:grid md:grid-cols-[260px_1fr]">
       <aside className="brand-gradient sticky top-0 hidden h-dvh flex-col gap-6 p-4 text-on-brand md:flex">
         <Logo />
         <nav className="flex flex-col gap-1">{links}</nav>

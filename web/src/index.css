@@ -85,7 +85,13 @@
   --color-critical: var(--critical);
 }
 
+/* Крупнее и жирнее везде: все размеры на сайте считаются от этого (rem). 16px → 18px. */
+html {
+  font-size: 18px;
+}
+
 body {
+  font-weight: 500;
   /* Мягкое фиолетовое и зелёное свечение по углам — фон не плоский. */
   background:
     radial-gradient(900px 420px at 100% -10%, color-mix(in srgb, var(--cta) 12%, transparent), transparent 70%),
@@ -120,3 +126,10 @@ body {
   background: linear-gradient(135deg, var(--cta), color-mix(in srgb, var(--cta) 70%, var(--accent) 30%));
   box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--cta) 60%, transparent);
 }
+
+/* Жирнее: обычный текст — средний (500), «средний» — полужирный, «полужирный» — жирный. */
+.font-normal { font-weight: 500; }
+.font-medium { font-weight: 600; }
+.font-semibold { font-weight: 700; }
+.font-bold { font-weight: 800; }
+th, h1, h2, h3, b, strong { font-weight: 700; }

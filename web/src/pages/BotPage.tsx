@@ -150,7 +150,7 @@ function HowItWorks() {
           <p className="font-medium">1. Задайте минимум и максимум</p>
           <p className="mt-1 text-ink-2">
             <b>Минимум</b> — цена, ниже которой продавать невыгодно. <b>Максимум</b> — выше которой не поднимать.
-            Нажмите «Добавить в бота».
+            Включите переключатель ON у товара.
           </p>
         </li>
         <li>
@@ -367,7 +367,7 @@ function Log() {
   return (
     <Card title="Журнал изменений" className="overflow-hidden">
       {!data?.length ? (
-        <p className="text-sm text-muted">Пока пусто. Добавьте товары в бота и нажмите «Пересчитать сейчас».</p>
+        <p className="text-sm text-muted">Пока пусто. Включите ON у товаров и нажмите «Пересчитать сейчас».</p>
       ) : (
         <ul className="divide-y divide-line text-sm">
           {data.map((e, i) => (
