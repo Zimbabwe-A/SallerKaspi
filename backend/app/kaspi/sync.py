@@ -70,6 +70,11 @@ def clean_order(item: dict) -> dict:
         "express": bool((a.get("kaspiDelivery") or {}).get("express")),
         "town": town if isinstance(town, str) else None,
         "origin_city": ((a.get("originAddress") or {}).get("city") or {}).get("name"),
+        # Для «Заказов к отправке»: собран ли заказ, когда передать курьеру, передан ли, есть ли накладная.
+        "assembled": bool(a.get("assembled")),
+        "transmission_planned": _int((a.get("kaspiDelivery") or {}).get("courierTransmissionPlanningDate")),
+        "transmitted": _int((a.get("kaspiDelivery") or {}).get("courierTransmissionDate")),
+        "has_waybill": bool((a.get("kaspiDelivery") or {}).get("waybillNumber") or (a.get("kaspiDelivery") or {}).get("waybill")),
         "entries": None,  # заполняется отдельным запросом
     }
 

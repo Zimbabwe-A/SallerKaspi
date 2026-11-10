@@ -9,6 +9,7 @@ import { BotPage } from './pages/BotPage'
 import { CostsPage } from './pages/CostsPage'
 import { WaybillsPage } from './pages/WaybillsPage'
 import { MarketPage } from './pages/MarketPage'
+import { OrdersPage } from './pages/OrdersPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { ProductPage } from './pages/ProductPage'
 import { ProductsPage } from './pages/ProductsPage'
@@ -32,6 +33,7 @@ function App() {
             <Route path="products" element={<ProductsPage />} />
             <Route path="products/:id" element={<ProductPage />} />
             <Route path="market" element={<MarketPage />} />
+            <Route path="orders" element={<OrdersPage />} />
             <Route path="stock" element={<StockPage />} />
             <Route path="bot" element={<BotPage />} />
             <Route path="costs" element={<CostsPage />} />

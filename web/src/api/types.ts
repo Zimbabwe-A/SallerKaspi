@@ -285,3 +285,32 @@ export interface BotLogEntry {
   reason: string
   dry_run: boolean
 }
+
+export interface ShipItem {
+  sku: string
+  name: string
+  qty: number
+}
+
+export interface ShipOrder {
+  code: string
+  created: string
+  town: string | null
+  express: boolean
+  assembled: boolean
+  ship_by: string | null
+  has_waybill: boolean
+  cancelling: boolean
+  total: number
+  items: ShipItem[]
+}
+
+export interface ToShip {
+  orders: ShipOrder[]
+  pick_list: (ShipItem & { orders: number })[]
+  count: number
+  due_today: number
+  not_assembled: number
+  cancelling: number
+  dates_known: boolean
+}

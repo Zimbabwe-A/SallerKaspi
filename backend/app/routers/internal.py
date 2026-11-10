@@ -4,7 +4,7 @@ from fastapi import APIRouter
 
 from app import config, schemas
 from app.deps import DatasetDep, PeriodDep, ProductIdDep
-from app.services import internal
+from app.services import internal, orders
 
 router = APIRouter(tags=["Внутренняя аналитика"])
 
@@ -55,6 +55,12 @@ def get_products(
 @router.get("/products/{product_id}", response_model=schemas.ProductDetail, summary="Карточка товара")
 def get_product(ds: DatasetDep, product_id: ProductIdDep, period: PeriodDep):
     return internal.product_detail(ds, product_id, *period)
+
+
+@router.get("/orders/to-ship", summary="Заказы к отправке и сборочный лист")
+def get_to_ship(ds: DatasetDep):
+    """Kaspi Доставка: принятые и ещё не переданные курьеру заказы. Без данных покупателей."""
+    return orders.to_ship(ds)
 
 
 @router.get("/stock", response_model=list[schemas.StockRow], summary="Остатки и дней до нуля")

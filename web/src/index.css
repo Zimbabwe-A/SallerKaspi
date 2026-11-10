@@ -117,3 +117,11 @@ th, h1, h2, h3, b, strong { font-weight: 700; }
   color: #fff;
   box-shadow: 0 0 16px color-mix(in srgb, var(--cta) 55%, transparent);
 }
+
+/* Печать только нужного блока (например, сборочного листа): остальное прячем. */
+@media print {
+  body:has(.print-area) * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; color: #000 !important; }
+  .print-area { position: absolute; inset: 0 auto auto 0; width: 100%; background: #fff !important; box-shadow: none !important; }
+  .print-area button { display: none; }
+}

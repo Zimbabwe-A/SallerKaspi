@@ -14,6 +14,7 @@ import type {
   Settings,
   StockRow,
   Summary,
+  ToShip,
 } from './types'
 import { usePeriod } from '../lib/period'
 
@@ -53,6 +54,8 @@ export const useProducts = (filters: Params = {}) => usePeriodQuery<ProductList>
 export const useProduct = (id: number) => usePeriodQuery<ProductDetail>(`/products/${id}`)
 export const usePriceHistory = (id: number) => usePeriodQuery<PriceHistory>(`/market/products/${id}/history`)
 
+export const useToShip = () =>
+  useQuery({ queryKey: ['to-ship'], queryFn: () => get<ToShip>('/orders/to-ship'), refetchInterval: 60_000 })
 export const useStock = () => useQuery({ queryKey: ['stock'], queryFn: () => get<StockRow[]>('/stock') })
 export const useOffers = (id: number) =>
   useQuery({ queryKey: ['offers', id], queryFn: () => get<Offers>(`/market/products/${id}/offers`) })

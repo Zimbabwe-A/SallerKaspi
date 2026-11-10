@@ -256,3 +256,41 @@ def test_real_shop_closed_without_access(shop, monkeypatch):
         monkeypatch.setattr(auth, "current_user", lambda token: {"id": 2, "shops": []})
         assert c.get("/api/summary?shop=main").status_code == 403
         assert c.get("/api/summary").status_code == 200
+
+
+def test_orders_to_ship_from_kaspi_cache(shop, monkeypatch):
+    import time as _t
+    from app.kaspi import sync
+    from app.services.orders import to_ship
+    from app.data import store
+    now = int(_t.time() * 1000)
+    cache = sync.load_cache("main")
+    entry = {"sku": "A1", "name": "Кисточка", "master_id": "M", "category_code": "C", "category_title": "Кисти",
+             "qty": 2, "base_price": 250, "total_price": 500, "weight": 0.0, "delivery_cost": 0}
+    base = {"state": "KASPI_DELIVERY", "status": "ACCEPTED_BY_MERCHANT", "created": now, "total": 500, "town": "Астана",
+            "express": False, "assembled": False, "transmission_planned": now, "transmitted": None, "has_waybill": True,
+            "entries": [entry], "delivery_mode": "DELIVERY_PICKUP", "kaspi_delivery": True,
+            "delivery_seller": 0, "origin_city": "Астана"}
+    cache["orders"] = {
+        "1": {**base, "id": "1", "code": "111"},
+        "2": {**base, "id": "2", "code": "222", "assembled": True, "entries": [{**entry, "qty": 1, "total_price": 250}]},
+        "3": {**base, "id": "3", "code": "333", "transmitted": now},  # уже у курьера
+        "4": {**base, "id": "4", "code": "444", "status": "CANCELLING"},
+        "5": {**base, "id": "5", "code": "555", "state": "ARCHIVE", "status": "COMPLETED"},
+        "6": {**base, "id": "6", "code": "666", "created": now - 30 * 86400_000},  # старый кэш
+    }
+    sync.save_cache("main", cache)
+    result = to_ship(store.get_dataset("main"))
+    assert [o["code"] for o in result["orders"]] == ["111", "222", "444"]
+    assert result["count"] == 2 and result["cancelling"] == 1 and result["not_assembled"] == 1 and result["due_today"] == 2
+    assert result["pick_list"] == [{"sku": "A1", "name": "Кисточка", "qty": 3, "orders": 2}]
+
+
+def test_clean_order_keeps_shipping_fields_without_buyer():
+    from app.kaspi.sync import clean_order
+    o = clean_order({"id": "9", "attributes": {
+        "code": "1", "state": "KASPI_DELIVERY", "status": "ACCEPTED_BY_MERCHANT", "assembled": True,
+        "customer": {"firstName": "Имя", "cellPhone": "7700"},
+        "kaspiDelivery": {"courierTransmissionPlanningDate": 1793970161623, "waybillNumber": "W1"}}})
+    assert o["assembled"] and o["transmission_planned"] == 1793970161623 and o["has_waybill"]
+    assert "Имя" not in str(o) and "7700" not in str(o)
