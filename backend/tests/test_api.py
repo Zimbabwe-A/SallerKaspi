@@ -89,3 +89,17 @@ def test_alerts_and_stock(client):
     stock = client.get("/api/stock").json()
     assert len(stock) == len(get_dataset().products)
     assert any(s["status"] != "ok" for s in stock)
+
+
+def test_stock_idle_frozen_and_reorder(client):
+    stock = client.get("/api/stock").json()
+    in_stock = [s for s in stock if s["quantity"] > 0]
+    assert in_stock and all(s["idle_days"] is not None and s["idle_days"] >= 0 for s in in_stock)
+    for s in in_stock:
+        if s["cost"] is not None:
+            assert s["frozen"] == s["quantity"] * s["cost"]
+    for s in stock:
+        if s["avg_daily_sales"] > 0:
+            import math
+            expected = max(0, math.ceil(s["avg_daily_sales"] * 30 - s["quantity"] - s["incoming_quantity"]))
+            assert s["reorder"] == expected

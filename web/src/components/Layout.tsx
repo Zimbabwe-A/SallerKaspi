@@ -10,6 +10,7 @@ const ICONS: Record<string, string> = {
   '/': 'M4 19V9M10 19V5M16 19v-7M22 19H2',
   '/products': 'M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4M12 11v10',
   '/market': 'M3 17l6-6 4 4 8-8M15 7h6v6',
+  '/stock': 'M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10M7.5 5l9 4',
   '/bot': 'M12 3v3M7 9h10a3 3 0 0 1 3 3v4a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-4a3 3 0 0 1 3-3zM9 14h.01M15 14h.01',
   '/waybills': 'M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z',
 }
@@ -18,6 +19,7 @@ const NAV = [
   { to: '/', label: 'Аналитика магазина', end: true },
   { to: '/products', label: 'Товары', end: false },
   { to: '/market', label: 'Аналитика рынка', end: false },
+  { to: '/stock', label: 'Склад', end: false },
   { to: '/bot', label: 'Бот цен', end: false },
   { to: '/waybills', label: 'Накладные', end: false },
 ]

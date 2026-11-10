@@ -128,6 +128,10 @@ export interface StockRow {
   status: StockStatus
   incoming_quantity: number
   incoming_date: string | null
+  idle_days: number | null
+  cost: number | null
+  frozen: number | null
+  reorder: number
 }
 
 export interface Offer {

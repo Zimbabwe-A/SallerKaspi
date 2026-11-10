@@ -132,6 +132,10 @@ class StockRow(BaseModel):
     status: StockStatus
     incoming_quantity: int
     incoming_date: date | None
+    idle_days: int | None = None  # сколько дней не было продаж (None — остаток неизвестен или нет на складе)
+    cost: int | None = None  # закупка за 1 шт
+    frozen: int | None = None  # денег в остатке по закупке: остаток × закупка
+    reorder: int = 0  # сколько дозаказать, чтобы хватило на REORDER_DAYS дней
 
 
 class Offer(BaseModel):

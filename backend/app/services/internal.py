@@ -1,5 +1,6 @@
 """Внутренняя аналитика: продажи, удержания Kaspi, прибыль, товары, остатки."""
 
+import math
 from collections import defaultdict
 from datetime import date, timedelta
 
@@ -130,33 +131,55 @@ def stock_status(quantity: int, days_of_cover: float | None) -> str:
     return "ok"
 
 
-def stock_row(ds: Dataset, product: Product) -> schemas.StockRow:
+IDLE_DAYS = 30  # столько дней без продаж — товар «лежит»
+REORDER_DAYS = 30  # дозаказ — чтобы хватило на месяц
+
+
+def last_sale_days(ds: Dataset) -> dict[int, int]:
+    """Сколько дней назад была последняя продажа каждого товара."""
+    last: dict[int, date] = {}
+    for o in ds.orders:
+        if o.status in ("delivered", "active") and o.day > last.get(o.product_id, date.min):
+            last[o.product_id] = o.day
+    return {pid: (ds.end - day).days for pid, day in last.items()}
+
+
+def stock_row(ds: Dataset, product: Product, idle: dict[int, int] | None = None) -> schemas.StockRow:
     state = ds.stock[product.id]
     velocity = sales_velocity(ds, product.id)
-    if not ds.stock_known:  # Kaspi API остатки не отдаёт
+    quantity = economics.stock_of(ds, product)  # из кабинета Kaspi или вписанный вручную
+    cost = economics.cost_of(ds, product)
+    if quantity is None:
         return schemas.StockRow(
             product_id=product.id, sku=product.sku, name=product.name, category_id=product.category_id,
             quantity=0, avg_daily_sales=velocity, days_of_cover=None, status="unknown",
-            incoming_quantity=0, incoming_date=None,
+            incoming_quantity=0, incoming_date=None, cost=cost,
         )
-    cover = round(state.quantity / velocity, 1) if velocity > 0 else None
+    idle = last_sale_days(ds) if idle is None else idle
+    cover = round(quantity / velocity, 1) if velocity > 0 else None
+    incoming = state.incoming_quantity if ds.stock_known else 0
     return schemas.StockRow(
         product_id=product.id,
         sku=product.sku,
         name=product.name,
         category_id=product.category_id,
-        quantity=state.quantity,
+        quantity=quantity,
         avg_daily_sales=velocity,
         days_of_cover=cover,
-        status=stock_status(state.quantity, cover),
-        incoming_quantity=state.incoming_quantity,
-        incoming_date=state.incoming_date,
+        status=stock_status(quantity, cover),
+        incoming_quantity=incoming,
+        incoming_date=state.incoming_date if ds.stock_known else None,
+        idle_days=(idle.get(product.id, (ds.end - ds.start).days) if quantity > 0 else None),
+        cost=cost,
+        frozen=quantity * cost if cost is not None and quantity > 0 else None,
+        reorder=max(0, math.ceil(velocity * REORDER_DAYS - quantity - incoming)) if velocity > 0 else 0,
     )
 
 
 def stock(ds: Dataset) -> list[schemas.StockRow]:
     order = {"out": 0, "critical": 1, "low": 2, "ok": 3, "unknown": 4}
-    rows = [stock_row(ds, p) for p in ds.products.values()]
+    idle = last_sale_days(ds)
+    rows = [stock_row(ds, p, idle) for p in ds.products.values()]
     return sorted(rows, key=lambda r: (order[r.status], r.days_of_cover if r.days_of_cover is not None else 1e9))
 
 
@@ -181,10 +204,11 @@ def product_rows(ds: Dataset, start: date, end: date) -> list[schemas.ProductRow
     abc = abc_classes({pid: t.revenue for pid, t in product_totals.items()})
 
     rows: list[schemas.ProductRow] = []
+    idle = last_sale_days(ds)
     for product in ds.products.values():
         t = product_totals[product.id]
         offers = market.offers(ds, product.id)
-        stock_info = stock_row(ds, product)
+        stock_info = stock_row(ds, product, idle)
         last = ds.market[product.id][-1]
         rows.append(schemas.ProductRow(
             id=product.id,

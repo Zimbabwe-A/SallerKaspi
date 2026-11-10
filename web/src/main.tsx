@@ -12,6 +12,7 @@ import { MarketPage } from './pages/MarketPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { ProductPage } from './pages/ProductPage'
 import { ProductsPage } from './pages/ProductsPage'
+import { StockPage } from './pages/StockPage'
 import { WelcomePage } from './pages/WelcomePage'
 
 const queryClient = new QueryClient({
@@ -31,6 +32,7 @@ function App() {
             <Route path="products" element={<ProductsPage />} />
             <Route path="products/:id" element={<ProductPage />} />
             <Route path="market" element={<MarketPage />} />
+            <Route path="stock" element={<StockPage />} />
             <Route path="bot" element={<BotPage />} />
             <Route path="costs" element={<CostsPage />} />
             <Route path="waybills" element={<WaybillsPage />} />
