@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { Card, PageTitle } from '../components/ui'
+import { useMe } from '../api/auth'
 
 // Варианты печати: три ряда, как в привычных ботах для накладных.
 const LAYOUTS = [
@@ -16,6 +17,22 @@ const LAYOUTS = [
   [{ id: 'join', label: 'Просто объединить' }],
 ]
 
+const fileName = (count: number) => {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `nakladnye_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}_${count}sht.pdf`
+}
+
+/** Сразу сохраняет файл в папку загрузок браузера, без открытия вкладки. */
+const save = (url: string, name: string) => {
+  const a = document.createElement('a')
+  a.href = url
+  a.download = name
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}
+
 const kb = (n: number) => (n > 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} МБ` : `${Math.max(1, Math.round(n / 1024))} КБ`)
 
 /** Склеиваем накладные Kaspi в один PDF: по одной наклейке на страницу, подряд — для потоковой печати. */
@@ -24,14 +41,21 @@ export function WaybillsPage() {
   const [size, setSize] = useState('75x120')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<{ url: string; count: number } | null>(null)
+  const [result, setResult] = useState<{ url: string; count: number; name: string; skipped: number } | null>(null)
+  const me = useMe()
+  const canSkip = me.data?.features?.includes('waybill_history') ?? false
+  const [skipPrinted, setSkipPrinted] = useState(true)
+  const [allPrinted, setAllPrinted] = useState(false)
   const [dragging, setDragging] = useState(false)
   const input = useRef<HTMLInputElement>(null)
 
   const add = (list: FileList | null) => {
     if (!list) return
-    const pdfs = [...list].filter((f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'))
-    if (pdfs.length < list.length) setError('Добавлены только PDF-файлы, остальные пропущены.')
+    const pdfs = [...list].filter((f) => {
+      const name = f.name.toLowerCase()
+      return f.type === 'application/pdf' || name.endsWith('.pdf') || name.endsWith('.zip') || /zip/.test(f.type)
+    })
+    if (pdfs.length < list.length) setError('Добавлены только PDF и ZIP, остальные файлы пропущены.')
     else setError(null)
     setFiles((prev) => {
       const seen = new Set(prev.map((f) => f.name + f.size))
@@ -40,14 +64,17 @@ export function WaybillsPage() {
     setResult(null)
   }
 
-  const build = async () => {
+  const build = async (skip = canSkip && skipPrinted) => {
     setBusy(true)
     setError(null)
+    setAllPrinted(false)
     try {
       const form = new FormData()
       files.forEach((f) => form.append('files', f))
       form.append('size', size)
-      const response = await fetch('/api/waybills/merge', { method: 'POST', body: form })
+      form.append('skip_printed', String(skip))
+      const response = await fetch('/api/waybills/merge', { method: 'POST', body: form, credentials: 'same-origin' })
+      if (response.status === 409) setAllPrinted(true)
       if (!response.ok) {
         const body = await response.json().catch(() => null)
         throw new Error(body?.detail ?? `Ошибка ${response.status}`)
@@ -55,8 +82,10 @@ export function WaybillsPage() {
       const blob = await response.blob()
       if (result) URL.revokeObjectURL(result.url)
       const url = URL.createObjectURL(blob)
-      setResult({ url, count: Number(response.headers.get('X-Labels') ?? 0) })
-      window.open(url, '_blank', 'noopener')
+      const count = Number(response.headers.get('X-Labels') ?? 0)
+      const name = fileName(count)
+      setResult({ url, count, name, skipped: Number(response.headers.get('X-Skipped') ?? 0) })
+      save(url, name)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не получилось собрать накладные')
     } finally {
@@ -73,8 +102,8 @@ export function WaybillsPage() {
       <Card>
         <ol className="grid gap-3 text-sm md:grid-cols-3">
           <li><b>1.</b> В кабинете Kaspi скачайте накладные заказов (файлы <code>W_….pdf</code>).</li>
-          <li><b>2.</b> Перетащите их все сюда сразу.</li>
-          <li><b>3.</b> Нажмите «Собрать и печатать» — откроется один PDF, напечатайте его.</li>
+          <li><b>2.</b> Перетащите их все сюда сразу — можно и одним ZIP-архивом.</li>
+          <li><b>3.</b> Нажмите «Собрать и скачать» — один PDF сразу сохранится в папку загрузок.</li>
         </ol>
       </Card>
 
@@ -94,8 +123,8 @@ export function WaybillsPage() {
           <path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" />
         </svg>
         <p className="text-lg font-bold">Перетащите накладные сюда</p>
-        <p className="text-sm text-ink-2">или нажмите, чтобы выбрать файлы · можно сразу много · только PDF</p>
-        <input ref={input} type="file" accept="application/pdf,.pdf" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = '' }} />
+        <p className="text-sm text-ink-2">или нажмите, чтобы выбрать файлы · можно сразу много · PDF или ZIP-архив с PDF</p>
+        <input ref={input} type="file" accept="application/pdf,.pdf,application/zip,.zip" multiple hidden onChange={(e) => { add(e.target.files); e.target.value = '' }} />
       </div>
 
       {files.length > 0 && (
@@ -146,31 +175,53 @@ export function WaybillsPage() {
                 </div>
               ))}
             </div>
+            {canSkip && (
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <input type="checkbox" checked={skipPrinted} onChange={(e) => setSkipPrinted(e.target.checked)} className="mt-0.5 size-4 accent-[var(--cta)]" />
+                <span>
+                  <b>Не печатать повторно</b> — накладные, которые вы уже печатали (по номеру заказа), пропускаются.
+                  <span className="block text-xs text-muted">Например, напечатали 1–6, теперь загрузили 1–15 — в файл попадут только 7–15.</span>
+                </span>
+              </label>
+            )}
             <button
               type="button"
               disabled={busy}
-              onClick={build}
+              onClick={() => build()}
               className="cta-gradient mt-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl px-5 text-base font-bold text-white disabled:opacity-50"
             >
               <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" />
               </svg>
-              {busy ? 'Собираю…' : 'Собрать и печатать'}
+              {busy ? 'Собираю…' : 'Собрать и скачать'}
             </button>
           </div>
         </Card>
       )}
 
-      {error && <p className="text-sm text-critical">{error}</p>}
+      {error && (
+        <p className="text-sm text-critical">
+          {error}
+          {allPrinted && (
+            <>
+              {' '}
+              <button type="button" onClick={() => build(false)} className="font-semibold text-accent hover:underline">
+                Напечатать всё равно
+              </button>
+            </>
+          )}
+        </p>
+      )}
       {result && (
         <Card>
           <p className="text-sm">
-            Готово: <b>{result.count}</b> {size === 'join' ? 'страниц' : 'наклеек'} в одном файле.{' '}
+            Готово: <b>{result.count}</b> {size === 'join' ? 'страниц' : 'наклеек'} — файл <b>{result.name}</b> сохранён в загрузки.
+            {result.skipped > 0 && <> Пропущено уже напечатанных: <b>{result.skipped}</b>.</>}{' '}
             <a href={result.url} target="_blank" rel="noopener" className="font-semibold text-accent hover:underline">Открыть PDF</a>
             {' · '}
-            <a href={result.url} download={`nakladnye_${result.count}.pdf`} className="font-semibold text-accent hover:underline">Скачать</a>
+            <a href={result.url} download={result.name} className="font-semibold text-accent hover:underline">Скачать ещё раз</a>
           </p>
-          <p className="mt-1 text-xs text-muted">Файлы никуда не сохраняются — накладные с адресами покупателей остаются только у вас.</p>
+          <p className="mt-1 text-xs text-muted">Файл сохраняется только на вашем компьютере, на сервере накладные не хранятся. Папку для загрузок можно сменить в настройках браузера.</p>
         </Card>
       )}
     </>

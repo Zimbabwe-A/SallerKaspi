@@ -1,10 +1,12 @@
 import asyncio
 from contextlib import asynccontextmanager, suppress
 
-from fastapi import FastAPI
+from typing import Annotated
+
+from fastapi import Cookie, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import config
+from app import auth, config
 from app.data import store
 from app.data.store import get_dataset
 from app.bot import runner, storage
@@ -35,9 +37,10 @@ app.add_middleware(
     allow_origins=config.CORS_ORIGINS,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type"],
-    expose_headers=["X-Labels"],
+    expose_headers=["X-Labels", "X-Skipped"],
 )
 
+app.include_router(auth.router, prefix="/api")
 app.include_router(internal.router, prefix="/api")
 app.include_router(market.router, prefix="/api")
 app.include_router(bot.router, prefix="/api")
@@ -53,8 +56,10 @@ def health():
 
 
 @app.get("/api/shops", tags=["Служебное"], summary="Магазины для выбора на сайте")
-def get_shops():
-    return store.shops()
+def get_shops(sk_session: Annotated[str | None, Cookie()] = None):
+    user = auth.current_user(sk_session)
+    allowed = {store.DEMO, *(user["shops"] if user else [])}
+    return [s for s in store.shops() if s["id"] in allowed]
 
 
 @app.get("/api/source", tags=["Служебное"], summary="Откуда данные выбранного магазина")

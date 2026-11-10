@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>kz.sallerkaspi.web</string>
+  <key>WorkingDirectory</key><string>/Users/sabinakainazarova/Desktop/user11/SallerKaspi/web</string>
+  <key>EnvironmentVariables</key><dict><key>PATH</key><string>/Users/sabinakainazarova/.nvm/versions/node/v24.22.1/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
+  <key>ProgramArguments</key><array>
+    <string>/Users/sabinakainazarova/.nvm/versions/node/v24.22.1/bin/npm</string><string>run</string><string>dev</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>/Users/sabinakainazarova/Library/Logs/SallerKaspi/web.log</string>
+  <key>StandardErrorPath</key><string>/Users/sabinakainazarova/Library/Logs/SallerKaspi/web.log</string>
+</dict></plist>

@@ -74,18 +74,34 @@ function Row({ product, index, stockKnown }: { product: ProductRow; index: numbe
   )
 }
 
+type StockFilter = 'all' | 'out' | 'in'
+
 export function CostsPage() {
   const [search, setSearch] = useState('')
   const [priceOrder, setPriceOrder] = useState<'desc' | 'asc' | null>(null)
+  const [stockFilter, setStockFilter] = useState<StockFilter>('all')
   const deferred = useDeferredValue(search)
   const { data, error } = useProducts({ search: deferred, sort: 'revenue', order: 'desc' })
   const source = useSource()
   const stockKnown = source.data?.stock_known ?? true
 
   const items = data?.items ?? []
+  const stockOf = (p: ProductRow) => (stockKnown ? p.stock : p.stock_entered)
+  const outCount = items.filter((p) => stockOf(p) === 0).length
+  const inCount = items.filter((p) => (stockOf(p) ?? 0) > 0).length
+  const filtered = items.filter((p) => {
+    if (stockFilter === 'out') return stockOf(p) === 0
+    if (stockFilter === 'in') return (stockOf(p) ?? 0) > 0
+    return true
+  })
   const rows = priceOrder
-    ? [...items].sort((a, b) => (priceOrder === 'desc' ? b.price - a.price : a.price - b.price))
-    : items
+    ? [...filtered].sort((a, b) => (priceOrder === 'desc' ? b.price - a.price : a.price - b.price))
+    : filtered
+  const filters: { key: StockFilter; label: string }[] = [
+    { key: 'all', label: `Все (${items.length})` },
+    { key: 'out', label: `Нет в наличии (${outCount})` },
+    { key: 'in', label: `В наличии (${inCount})` },
+  ]
   const togglePrice = () => setPriceOrder((o) => (o === 'desc' ? 'asc' : 'desc'))
 
   return (
@@ -107,6 +123,21 @@ export function CostsPage() {
         aria-label="Поиск по названию или артикулу"
         className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm"
       />
+      <div className="flex flex-wrap self-start rounded-xl border border-line bg-surface p-1 shadow-sm">
+        {filters.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setStockFilter(f.key)}
+            aria-pressed={stockFilter === f.key}
+            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm ${
+              stockFilter === f.key ? 'bg-ink font-medium text-page' : 'text-ink-2 hover:bg-hover'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
       {error && <ErrorBox error={error} />}
       <Card className="overflow-hidden !p-0">
         <div className="overflow-x-auto">
@@ -128,6 +159,13 @@ export function CostsPage() {
               {rows.map((p, i) => (
                 <Row key={p.id} product={p} index={i + 1} stockKnown={stockKnown} />
               ))}
+              {data && rows.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-muted">
+                    {stockFilter === 'out' ? 'Нет товаров с нулевым остатком' : 'Ничего не найдено'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

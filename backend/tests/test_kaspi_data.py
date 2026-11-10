@@ -5,7 +5,7 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from app import config
+from app import auth, config
 from app.bot import storage
 from app.kaspi import sync
 from app.kaspi.sync import clean_entry, clean_order
@@ -39,6 +39,8 @@ def shop(tmp_path, monkeypatch):
     monkeypatch.setattr(storage, "LOG_FILE", tmp_path / "bot_log.jsonl")
     monkeypatch.setattr(storage, "FEED_FILE", tmp_path / "price.xml")
     monkeypatch.setattr(config, "KASPI_API_TOKEN", "test-token")
+    # Вошёл аккаунт, которому открыт настоящий магазин.
+    monkeypatch.setattr(auth, "current_user", lambda token: {"id": 1, "shops": ["main"]})
     orders = {}
     for raw, entries in [
         (raw_order("1", "COMPLETED"), [raw_entry("207540642", "Кисточки", 1, 10_000)]),
@@ -239,3 +241,14 @@ def test_insights_on_demo_shop():
     with TestClient(app) as c:
         d = c.get("/api/market/insights").json()
         assert d["reorder"] and d["abc"] and d["risks"]
+
+
+def test_real_shop_closed_without_access(shop, monkeypatch):
+    from app.main import app
+    with TestClient(app) as c:
+        monkeypatch.setattr(auth, "current_user", lambda token: None)
+        assert c.get("/api/summary?shop=main").status_code == 401
+        assert [s["id"] for s in c.get("/api/shops").json()] == ["demo"]
+        monkeypatch.setattr(auth, "current_user", lambda token: {"id": 2, "shops": []})
+        assert c.get("/api/summary?shop=main").status_code == 403
+        assert c.get("/api/summary").status_code == 200

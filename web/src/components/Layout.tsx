@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
+import { useLogout, useMe } from '../api/auth'
 import { currentShop, useShops, useSource } from '../api/client'
 import { usePeriodSearch } from '../lib/period'
 import { PeriodPicker } from './PeriodPicker'
@@ -87,6 +88,18 @@ function ShopPicker() {
   )
 }
 
+function Account() {
+  const me = useMe()
+  const logout = useLogout()
+  if (!me.data) return null
+  return (
+    <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-3 text-xs text-on-brand/70">
+      <span className="truncate" title={me.data.login}>{me.data.name || me.data.login}</span>
+      <button type="button" onClick={() => logout.mutate()} className="shrink-0 font-bold text-on-brand hover:underline">Выйти</button>
+    </div>
+  )
+}
+
 export function Layout() {
   const [menuOpen, setMenuOpen] = useState(false)
   const search = usePeriodSearch()
@@ -116,7 +129,7 @@ export function Layout() {
       <aside className="brand-gradient sticky top-0 hidden h-dvh flex-col gap-6 border-r border-line p-4 text-on-brand md:flex">
         <Logo />
         <nav className="flex flex-col gap-1">{links}</nav>
-        <div className="mt-auto"><ShopPicker /></div>
+        <div className="mt-auto flex flex-col gap-3"><ShopPicker /><Account /></div>
       </aside>
 
       <header className="brand-gradient sticky top-0 z-20 px-4 py-3 text-on-brand md:hidden">
@@ -138,6 +151,7 @@ export function Layout() {
           <div className="mt-3 flex flex-col gap-3">
             <nav className="flex flex-col gap-1">{links}</nav>
             <ShopPicker />
+            <Account />
           </div>
         )}
       </header>

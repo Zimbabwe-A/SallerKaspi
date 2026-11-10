@@ -1,13 +1,25 @@
 from datetime import date, timedelta
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Query
+from fastapi import Cookie, Depends, HTTPException, Query
+
+from app import auth
 
 from app.data import store
 from app.data.models import Dataset
 
 
-def get_dataset(shop: Annotated[str, Query(description="Магазин: demo или main")] = store.DEMO) -> Dataset:
+def get_dataset(
+    shop: Annotated[str, Query(description="Магазин: demo или main")] = store.DEMO,
+    sk_session: Annotated[str | None, Cookie()] = None,
+) -> Dataset:
+    # Демо открыто всем, настоящий магазин — только аккаунтам, которым он открыт.
+    if shop != store.DEMO:
+        user = auth.current_user(sk_session)
+        if not user:
+            raise HTTPException(status_code=401, detail="Войдите в аккаунт")
+        if shop not in user["shops"]:
+            raise HTTPException(status_code=403, detail="Этот магазин вам не открыт")
     try:
         return store.get_dataset(shop)
     except LookupError as error:
