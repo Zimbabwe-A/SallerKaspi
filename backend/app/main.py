@@ -11,7 +11,7 @@ from app.data import store
 from app.data.store import get_dataset
 from app.bot import runner, storage
 from app.deps import DatasetDep
-from app.routers import bot, internal, market, waybills
+from app.routers import bot, costs, internal, market, waybills
 
 
 @asynccontextmanager
@@ -46,6 +46,8 @@ app.include_router(market.router, prefix="/api")
 app.include_router(bot.router, prefix="/api")
 app.include_router(bot.write, prefix="/api")
 app.include_router(waybills.router, prefix="/api")
+app.include_router(costs.router, prefix="/api")
+app.include_router(costs.write, prefix="/api")
 
 
 @app.get("/api/health", tags=["Служебное"])

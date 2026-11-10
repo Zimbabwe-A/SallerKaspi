@@ -109,7 +109,7 @@ export function Layout() {
   const search = usePeriodSearch()
   // На «Товарах» свой выбор срока, а боту период не нужен — общий выбор дат там лишний.
   const { pathname } = useLocation()
-  const showPeriod = !['/products', '/bot', '/costs', '/waybills', '/market'].includes(pathname)
+  const showPeriod = !['/products', '/bot', '/costs', '/waybills', '/market', '/stock', '/orders'].includes(pathname)
 
   const links = NAV.map((item) => (
     <NavLink

@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
 import { useBot, useBotLog, useBotRun, useBotSwitch, useSaveRule, useSource } from '../api/client'
 import type { BotRow, BotRule, BotStatus } from '../api/types'
 import { Card, ErrorBox, Kpi, Loading, Notice, PageTitle } from '../components/ui'
 import { int, money } from '../lib/format'
-import { usePeriodSearch } from '../lib/period'
 
 const time = (iso: string) =>
   new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })

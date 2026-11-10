@@ -39,6 +39,17 @@ def set_cost(shop_id: str, sku: str, cost: int | None) -> None:
         _write_private(costs_file(shop_id), json.dumps(costs, ensure_ascii=False, indent=2))
 
 
+def set_costs(shop_id: str, changes: dict[str, int]) -> None:
+    """Сохранить много закупочных цен разом (загрузка таблицей)."""
+    if not changes:
+        return
+    with lock:
+        costs = load_costs(shop_id)
+        costs.update({sku: int(v) for sku, v in changes.items()})
+        shop_dir(shop_id).mkdir(mode=0o700, parents=True, exist_ok=True)
+        _write_private(costs_file(shop_id), json.dumps(costs, ensure_ascii=False, indent=2))
+
+
 def cost_of(ds: Dataset, product: Product) -> int | None:
     """Закупка: что вы ввели, иначе из данных магазина. None — не указана (у настоящего магазина)."""
     saved = load_costs(ds.shop_id).get(product.sku)
