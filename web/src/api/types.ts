@@ -212,7 +212,7 @@ export interface DeliveryTier {
   express: number | null
 }
 
-export type BotStrategy = 'first' | 'second'
+export type BotStrategy = 'first' | 'second' | 'top3' | 'top5'
 
 export interface BotRule {
   enabled: boolean
@@ -244,6 +244,9 @@ export interface BotRow {
   first_place_profit: number | null
   units_30d: number
   stock: number | null
+  last_time: string | null
+  last_reason: string | null
+  last_kind: string | null
 }
 
 export interface BotCounts {
@@ -258,6 +261,7 @@ export interface BotCounts {
 export interface BotStatus {
   enabled: boolean
   dry_run: boolean
+  night_pause: boolean
   last_run: string | null
   interval_seconds: number
   source: string

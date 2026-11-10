@@ -143,7 +143,7 @@ export const useSaveStock = () => {
 }
 export const useDeleteRule = () => useBotMutation((id: number) => send('DELETE', `/bot/products/${id}`))
 export const useBotSwitch = () =>
-  useBotMutation((body: { enabled: boolean; dry_run: boolean }) => send('POST', '/bot/switch', body))
+  useBotMutation((body: { enabled: boolean; dry_run: boolean; night_pause?: boolean }) => send('POST', '/bot/switch', body))
 export const useBotRun = () => useBotMutation(() => send('POST', '/bot/run'))
 
 export interface Insights {

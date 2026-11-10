@@ -35,7 +35,7 @@ class RuleIn(BaseModel):
     min_price: Annotated[int, Field(gt=0, le=100_000_000)]
     max_price: Annotated[int, Field(gt=0, le=100_000_000)]
     step: Annotated[int, Field(ge=1, le=1)] = 1  # бот всегда снижает на 1 ₸
-    strategy: Literal["first", "second"] = "first"
+    strategy: Literal["first", "second", "top3", "top5"] = "first"
     protect: bool = True  # не ниже цены без убытка
 
     @model_validator(mode="after")
@@ -66,6 +66,9 @@ class BotRow(BaseModel):
     first_place_profit: int | None  # прибыль с продажи по этой цене
     units_30d: int = 0  # продано штук за 30 дней — для сортировки «топ продаж»
     stock: int | None = None  # остаток на складе (из кабинета Kaspi или вписанный вручную)
+    last_time: str | None = None  # когда бот последний раз решал по товару
+    last_reason: str | None = None  # что решил и почему (в том числе «держим» из-за тормозов)
+    last_kind: str | None = None
 
 
 class BotCounts(BaseModel):
@@ -80,6 +83,7 @@ class BotCounts(BaseModel):
 class BotStatus(BaseModel):
     enabled: bool
     dry_run: bool
+    night_pause: bool = True
     last_run: str | None
     interval_seconds: int
     source: str
@@ -92,6 +96,7 @@ class BotStatus(BaseModel):
 class SwitchIn(BaseModel):
     enabled: bool
     dry_run: bool
+    night_pause: bool | None = None  # None — не менять
 
 
 def _demo_only(ds) -> None:
@@ -145,6 +150,9 @@ def _status(ds) -> BotStatus:
             first_place_profit=profit(first_price) if first_price and first_price > 0 else None,
             units_30d=sold.get(p.id, 0),
             stock=economics.stock_of(ds, p),
+            last_time=(state.last.get(str(p.id)) or {}).get("time"),
+            last_reason=(state.last.get(str(p.id)) or {}).get("reason"),
+            last_kind=(state.last.get(str(p.id)) or {}).get("kind"),
         ))
     active = [r for r in rows if r.next_position is not None]
     counts = BotCounts(
@@ -157,6 +165,7 @@ def _status(ds) -> BotStatus:
     )
     return BotStatus(
         enabled=state.enabled, dry_run=state.dry_run or ds.source != "test", last_run=state.last_run,
+        night_pause=state.night_pause,
         interval_seconds=config.BOT_INTERVAL_SECONDS, source=source.name,
         # Секретную часть ссылки сайт не получает: её видно только в терминале при запуске.
         feed_path="/kaspi/<секрет>/price.xml",
@@ -205,6 +214,8 @@ def switch(ds: DatasetDep, body: SwitchIn):
     with storage.lock:
         state = storage.load_state(ds.shop_id)
         state.enabled, state.dry_run = body.enabled, body.dry_run
+        if body.night_pause is not None:
+            state.night_pause = body.night_pause
         storage.save_state(state, ds.shop_id)
     return _status(ds)
 

@@ -44,6 +44,11 @@ class BotState:
     rules: dict[str, ProductRule] = field(default_factory=dict)  # product_id -> правило
     prices: dict[str, int] = field(default_factory=dict)  # product_id -> цена, которую отдаём в Kaspi
     last_run: str | None = None
+    night_pause: bool = True  # ночью (23:00–07:00) цену не снижать
+    # product_id -> ходы бота за последние сутки: [{"t": время, "up": подъём?}] — для тормозов
+    moves: dict[str, list[dict]] = field(default_factory=dict)
+    # product_id -> последнее решение: {"time", "price", "kind", "reason"} — «почему бот так решил»
+    last: dict[str, dict] = field(default_factory=dict)
 
 
 def _ensure_dir() -> None:
@@ -81,6 +86,9 @@ def load_state(shop: str = "demo") -> BotState:
             rules={pid: ProductRule(**r) for pid, r in raw.get("rules", {}).items()},
             prices={pid: int(p) for pid, p in raw.get("prices", {}).items()},
             last_run=raw.get("last_run"),
+            night_pause=raw.get("night_pause", True),
+            moves=raw.get("moves", {}),
+            last=raw.get("last", {}),
         )
 
 

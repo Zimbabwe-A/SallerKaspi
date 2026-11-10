@@ -174,6 +174,26 @@ function Controls({ status }: { status: BotStatus }) {
         </div>
       </div>
 
+      <div className="mt-4 flex items-start gap-3 border-t border-line pt-4">
+        <Toggle
+          label="Ночью не снижать"
+          checked={status.night_pause}
+          disabled={toggle.isPending}
+          onChange={(night_pause) => toggle.mutate({ enabled: status.enabled, dry_run: status.dry_run, night_pause })}
+        />
+        <div className="text-sm">
+          <p className="font-medium">Ночью не снижать цену (23:00–07:00)</p>
+          <p className="mt-0.5 text-ink-2">
+            Ночью покупателей мало — гонка цен ничего не даёт. Поднимать цену бот может и ночью.
+          </p>
+          <p className="mt-1 text-xs text-muted">
+            Тормоза всегда включены: за проход цена меняется не больше чем на 5 %, не больше 6 снижений и 6 подъёмов в
+            сутки, между ходами — час. Подъём до безубыточной цены — сразу, без ограничений. Ошибочные цены
+            конкурентов («товар за 1 ₸») не учитываются.
+          </p>
+        </div>
+      </div>
+
       <Freshness />
 
       {(toggle.error || run.error) && (
@@ -236,6 +256,9 @@ function Outcome({ row }: { row: BotRow }) {
         </p>
       )}
       <p className="max-w-56 whitespace-normal text-right text-xs text-muted">{row.next_reason}</p>
+      {row.last_reason && row.last_kind === 'hold' && (
+        <p className="max-w-56 whitespace-normal text-right text-xs text-warning">Сейчас держим: {row.last_reason}</p>
+      )}
       {row.next_position !== 1 && row.first_place_price !== null && (
         <p className="max-w-56 whitespace-normal text-right text-xs text-muted">
           Чтобы быть 1-м, нужно {money(row.first_place_price)}
@@ -328,6 +351,8 @@ function RuleRow({ row, index }: { row: BotRow; index: number }) {
         >
           <option value="first">На 1-м месте</option>
           <option value="second">На 2-м месте</option>
+          <option value="top3">В тройке</option>
+          <option value="top5">В пятёрке</option>
         </select>
       </td>
       <td className="whitespace-nowrap px-3 py-3 text-right"><Outcome row={row} /></td>

@@ -7,7 +7,9 @@ from app import config
 from app.bot import storage
 from app.bot.feed import FeedOffer, build_xml
 from app.bot.sources import CompetitorSource, TestCompetitorSource
-from app.bot.strategy import Rule, decide
+from datetime import datetime, timedelta
+
+from app.bot.strategy import Move, Rule, brake, decide
 from app import economics
 from app.data.models import Dataset
 from app.data.store import get_dataset
@@ -53,6 +55,7 @@ def run_once(ds: Dataset, source: CompetitorSource | None = None, force: bool = 
             return []
 
         time = storage.now_iso()
+        now = datetime.fromisoformat(time)
         entries: list[dict] = []
         for pid_str, rule in state.rules.items():
             pid = int(pid_str)
@@ -60,13 +63,19 @@ def run_once(ds: Dataset, source: CompetitorSource | None = None, force: bool = 
                 continue
             old = current_price(ds, state, pid)
             try:
-                decision = decide(effective_rule(ds, pid, rule)[0], source.prices(pid))
+                effective, floor = effective_rule(ds, pid, rule)
+                wanted = decide(effective, source.prices(pid))
+                moves = _recent_moves(state, pid_str, now)
+                decision = brake(old, wanted, moves, now, floor if rule.protect else None, state.night_pause)
             except Exception as error:  # один сломанный товар не должен останавливать остальные
                 entries.append(_entry(time, ds, pid, old, old, f"Ошибка: {error}", state.dry_run))
                 continue
+            state.last[pid_str] = {"time": time, "price": decision.price, "kind": decision.kind, "reason": decision.reason}
             if decision.price == old:
                 continue
             entries.append(_entry(time, ds, pid, old, decision.price, decision.reason, state.dry_run))
+            # Ход считаем и в тестовом режиме: так журнал не засоряется одним и тем же советом каждые 5 минут.
+            state.moves.setdefault(pid_str, []).append({"t": time, "up": decision.price > old})
             if not state.dry_run:
                 state.prices[pid_str] = decision.price
 
@@ -76,6 +85,17 @@ def run_once(ds: Dataset, source: CompetitorSource | None = None, force: bool = 
         if not real_shop:  # прайс-лист для Kaspi — только у демо-магазина
             storage.write_feed(render_feed(ds, state))
         return entries
+
+
+def _recent_moves(state: storage.BotState, pid: str, now: datetime) -> list[Move]:
+    """Ходы товара за сутки; старые выбрасываем, чтобы файл не рос."""
+    day_ago = now - timedelta(days=1)
+    kept = [m for m in state.moves.get(pid, []) if datetime.fromisoformat(m["t"]) > day_ago]
+    if kept:
+        state.moves[pid] = kept
+    else:
+        state.moves.pop(pid, None)
+    return [Move(datetime.fromisoformat(m["t"]), m["up"]) for m in kept]
 
 
 def _entry(time: str, ds: Dataset, pid: int, old: int, new: int, reason: str, dry_run: bool) -> dict:

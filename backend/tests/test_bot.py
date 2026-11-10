@@ -261,3 +261,58 @@ def test_waybill_layouts_count_pages():
     for layout, pages in [("a4x1", 9), ("a4x4", 3), ("a4x8", 2), ("a4x9", 1), ("75x120", 9), ("100x150", 9), ("join", 9)]:
         pdf, count = merge(files, layout)
         assert count == 9 and len(PdfReader(io.BytesIO(pdf)).pages) == pages, layout
+
+
+# --- Умный бот: места, выбросы, тормоза ---
+
+def test_top3_and_top5_bands():
+    prices = [10_000, 10_100, 10_200, 10_300, 10_400, 10_500]
+    assert decide(Rule(9_000, 12_000, 1, "top3"), prices).price == 10_199
+    assert decide(Rule(9_000, 12_000, 1, "top5"), prices).price == 10_399
+    few = decide(Rule(9_000, 12_000, 1, "top5"), [10_000, 10_100])
+    assert few.price == 12_000 and few.kind == "alone"
+
+
+def test_outlier_prices_are_ignored():
+    # «товар за 1 ₸» и цена в 10 раз выше рынка — не рынок
+    d = decide(Rule(5_000, 20_000, 1), [1, 10_000, 10_500, 11_000, 150_000])
+    assert d.price == 9_999
+
+
+def _brake(old, new, moves=(), hour=14, floor=None, night_pause=True):
+    from datetime import datetime
+    from app.bot.strategy import Decision, brake
+    now = datetime(2026, 11, 10, hour, 0)
+    return brake(old, Decision(new, "цель", "target"), list(moves), now, floor, night_pause)
+
+
+def test_brake_limits_depth_to_5_percent():
+    assert _brake(10_000, 8_000).price == 9_500
+    assert _brake(10_000, 13_000).price == 10_500
+    assert _brake(10_000, 9_800).price == 9_800  # маленький ход — как есть
+
+
+def test_brake_night_pause_only_for_decreases():
+    assert _brake(10_000, 9_900, hour=2).kind == "hold"
+    assert _brake(10_000, 10_100, hour=2).price == 10_100
+    assert _brake(10_000, 9_900, hour=2, night_pause=False).price == 9_900
+
+
+def test_brake_pause_and_daily_limit():
+    from datetime import datetime, timedelta
+    from app.bot.strategy import Move
+    now = datetime(2026, 11, 10, 14, 0)
+    recent = [Move(now - timedelta(minutes=20), up=False)]
+    held = _brake(10_000, 9_900, recent)
+    assert held.kind == "hold" and "через 40 мин" in held.reason
+    assert _brake(10_000, 10_100, recent).price == 10_100  # подъём — своя пауза
+    six = [Move(now - timedelta(hours=h), up=False) for h in range(2, 8)]
+    assert _brake(10_000, 9_900, six).kind == "hold"
+
+
+def test_raise_to_break_even_is_not_braked():
+    from datetime import datetime, timedelta
+    from app.bot.strategy import Move
+    now = datetime(2026, 11, 10, 14, 0)
+    many = [Move(now - timedelta(minutes=5 + h), up=True) for h in range(6)]
+    assert _brake(8_000, 10_000, many, floor=9_000).price == 10_000

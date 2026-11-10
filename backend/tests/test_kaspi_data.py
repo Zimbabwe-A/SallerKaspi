@@ -161,6 +161,8 @@ def test_cabinet_stock_reaches_site(shop):
 
 
 def test_real_shop_market_and_bot_test_mode_only(shop, monkeypatch):
+    from app.bot import strategy
+    monkeypatch.setattr(strategy, "is_night", lambda now: False)  # тест не зависит от времени суток
     from app import config
     from app.bot import storage as st
     from app.kaspi.market import save_market
@@ -183,13 +185,15 @@ def test_real_shop_market_and_bot_test_mode_only(shop, monkeypatch):
         # Включить смену цен на настоящем магазине нельзя.
         assert c.post("/api/bot/switch?shop=main", json={"enabled": True, "dry_run": False}, headers=headers).status_code == 409
         changes = c.post("/api/bot/run?shop=main", json={}, headers=headers).json()["changes"]
-        assert changes and all(ch["dry_run"] for ch in changes) and changes[0]["new_price"] == 248
+        assert changes and all(ch["dry_run"] for ch in changes) and changes[0]["new_price"] == 285  # не больше 5 % за проход
         # Настройки бота настоящего магазина — отдельно от демо, прайс-лист для Kaspi не создаётся.
         assert (sync.shop_dir("main") / "bot_state.json").exists()
         assert not st.FEED_FILE.exists() or "207540642" not in st.FEED_FILE.read_text()
 
 
 def test_autoupdate_cycle_refreshes_market_and_bot_stays_in_test_mode(shop, monkeypatch):
+    from app.bot import strategy
+    monkeypatch.setattr(strategy, "is_night", lambda now: False)  # тест не зависит от времени суток
     from app import config
     from app.bot import storage as st
     from app.kaspi import autoupdate, market
@@ -210,7 +214,7 @@ def test_autoupdate_cycle_refreshes_market_and_bot_stays_in_test_mode(shop, monk
     result = autoupdate.run_cycle()
     assert result["market"].startswith("ok") and "тестовый режим" in result["bot"]
     log = st.read_log(shop="main")
-    assert log and all(e["dry_run"] for e in log) and log[0]["new_price"] == 248
+    assert log and all(e["dry_run"] for e in log) and log[0]["new_price"] == 285  # не больше 5 % за проход
     assert st.load_state("main").prices == {}  # цена в «наших» данных не поменялась
 
 
